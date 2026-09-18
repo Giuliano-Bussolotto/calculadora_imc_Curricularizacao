@@ -2,7 +2,9 @@
 
 Projeto mobile inicial com React Native, Expo, JavaScript e npm.
 
-A tela inicial exibe apenas **Calculadora IMC** e, abaixo, **Projeto inicial**.
+A tela exibe o título **Calculadora IMC**, os campos **Peso (kg)** e **Altura (m)**, o botão **Calcular** e uma área de resultado.
+
+O cálculo usa peso / altura² e mostra o IMC com duas casas decimais, seguido de “Cálculo realizado.”. Os campos aceitam vírgula ou ponto decimal. Valores vazios, inválidos ou menores ou iguais a zero exibem uma mensagem de validação. Ao editar um campo, o resultado anterior é substituído por uma instrução para calcular novamente.
 
 ## Iniciar
 
@@ -30,9 +32,9 @@ Também estão disponíveis `npm run android` e `npm run ios`, que exigem um emu
 - `.gitignore`: exclusão de dependências e arquivos locais do controle de versão.
 - `LICENSE`: licença do template Expo.
 
-Este primeiro passo não implementa cálculo de IMC, autenticação, Supabase, banco de dados ou histórico. Não há configuração TypeScript no aplicativo.
+O aplicativo usa somente JavaScript e as três dependências originais. Não há histórico, autenticação, Supabase, banco de dados ou configuração TypeScript.
 
-## Verificação realizada
+## Verificação da configuração inicial
 
 - `npx expo install --check`: dependências compatíveis.
 - `npx expo-doctor`: 21 de 21 verificações aprovadas.
@@ -42,3 +44,12 @@ Este primeiro passo não implementa cálculo de IMC, autenticação, Supabase, b
 O servidor usado na verificação foi encerrado. Execute `npm start` para iniciar novamente. A tela não foi testada em celular ou simulador neste ambiente.
 
 O `npm audit` registrou 10 alertas moderados na cadeia de dependências do Expo, originados em `uuid`, usado por `xcode`. A simulação de `npm audit fix` manteve esses alertas; a alternativa forçada sugerida pelo npm rebaixaria o Expo para o SDK 46. Foi mantida a combinação compatível do template oficial. Esses alertas não impediram as verificações de inicialização e compilação.
+
+## Verificação da calculadora
+
+- 14 verificações da lógica aprovadas: cálculo e arredondamento, vírgula/ponto, valores inválidos e atualização do resultado ao editar os campos.
+- Bundles Android e iOS gerados sem erros pelo Expo.
+- Servidor Metro iniciado com `npm start -- --port 8082`: status ativo, manifesto correto e bundle de desenvolvimento carregado com HTTP 200. O servidor de teste foi encerrado ao concluir.
+- O teste com `--localhost` apresentou `connect ECONNREFUSED 127.0.0.1:8082`; reiniciar com a configuração padrão de rede do Expo resolveu o acesso ao bundle.
+- Nenhuma dependência adicionada.
+- A tela ainda não foi testada em celular ou simulador.
