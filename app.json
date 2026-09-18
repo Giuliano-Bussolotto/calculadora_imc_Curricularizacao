@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "calculadora-imc",
+    "name": "Calculadora IMC",
     "slug": "calculadora-imc",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -16,9 +16,6 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       }
-    },
-    "web": {
-      "favicon": "./assets/favicon.png"
     }
   }
 }
