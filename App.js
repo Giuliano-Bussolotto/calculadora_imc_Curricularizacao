@@ -44,8 +44,24 @@ export default function App() {
       return;
     }
 
+    // Faixas de classificação do IMC para adultos, antes do arredondamento.
+    let classificacao;
+    if (imc < 18.5) {
+      classificacao = 'Abaixo do peso';
+    } else if (imc < 25) {
+      classificacao = 'Peso adequado';
+    } else if (imc < 30) {
+      classificacao = 'Sobrepeso';
+    } else if (imc < 35) {
+      classificacao = 'Obesidade grau I';
+    } else if (imc < 40) {
+      classificacao = 'Obesidade grau II';
+    } else {
+      classificacao = 'Obesidade grau III';
+    }
+
     Keyboard.dismiss();
-    setResultado(`IMC: ${imc.toFixed(2).replace('.', ',')}\nCálculo realizado.`);
+    setResultado(`IMC: ${imc.toFixed(2).replace('.', ',')}\nClassificação (adultos): ${classificacao}.`);
   }
 
   function atualizarPeso(valor) {
@@ -70,17 +86,6 @@ export default function App() {
         <View style={styles.form}>
           <Text style={styles.title}>Calculadora IMC</Text>
 
-          <Text style={styles.label}>Peso (kg)</Text>
-          <TextInput
-            style={styles.input}
-            accessibilityLabel="Peso em quilogramas"
-            placeholder="Ex.: 70"
-            placeholderTextColor="#777"
-            keyboardType="decimal-pad"
-            value={peso}
-            onChangeText={atualizarPeso}
-          />
-
           <Text style={styles.label}>Altura (m)</Text>
           <TextInput
             style={styles.input}
@@ -90,6 +95,17 @@ export default function App() {
             keyboardType="decimal-pad"
             value={altura}
             onChangeText={atualizarAltura}
+          />
+
+          <Text style={styles.label}>Peso (kg)</Text>
+          <TextInput
+            style={styles.input}
+            accessibilityLabel="Peso em quilogramas"
+            placeholder="Ex.: 70"
+            placeholderTextColor="#777"
+            keyboardType="decimal-pad"
+            value={peso}
+            onChangeText={atualizarPeso}
           />
 
           <Button title="Calcular" onPress={calcularIMC} color="#2458a6" />
