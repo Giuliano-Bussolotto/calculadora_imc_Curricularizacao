@@ -56,8 +56,6 @@ Se você já tem uma cópia local, entre nela em vez de clonar novamente. Caso `
 git remote add origin https://github.com/SEU-USUARIO-OU-ORGANIZACAO/SEU-REPOSITORIO.git
 ```
 
-Se o projeto ainda não estiver publicado no GitHub, o responsável deve publicar o repositório antes de outro desenvolvedor conseguir cloná-lo ou abrir um pull request.
-
 ## 3. Instalar React, React Native e Expo
 
 Dentro da pasta que contém `package.json`, execute:
