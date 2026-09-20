@@ -6,6 +6,19 @@ O aplicativo inicia em uma tela de boas-vindas com espaço reservado para a logo
 
 A tela da calculadora apresenta altura antes de peso, calcula o IMC com duas casas decimais e exibe a classificação para adultos. Aceita peso como `70`, `70,5` ou `70.5` e altura como `175`, `1,75` ou `1.75`. Alturas a partir de 10 são interpretadas em centímetros. Ainda não há histórico, autenticação ou banco de dados.
 
+## Plataformas suportadas e distribuição futura
+
+Requisito oficial atualizado em **20/09/2026**: o aplicativo da clínica deverá oferecer suporte a **Android e iOS**, mantendo React Native, Expo e JavaScript.
+
+| Plataforma | Canal de distribuição previsto |
+| --- | --- |
+| Android | Google Play Store |
+| iOS | Apple App Store |
+
+Todas as novas funcionalidades deverão preservar a compatibilidade com as duas plataformas. As decisões sobre componentes, navegação, dependências e APIs devem considerar Android e iOS. Nas próximas entregas de funcionalidades, verificar o funcionamento e a interface em ambas as plataformas, registrando os testes realizados e eventuais pendências de cada uma.
+
+A distribuição nas lojas é um objetivo futuro. Esta atualização registra o requisito na documentação; não implementa nem configura publicação, não modifica funcionalidades existentes e não cria integrações com Supabase ou Firebase nem banco de dados.
+
 ## 1. Instalar Node.js, npm e Git
 
 ### Node.js e npm
@@ -185,9 +198,9 @@ Para documentação, confira os comandos, a formatação e `git diff --check`. E
 npm test
 ```
 
-Os testes usam `node:test` e os transformadores Babel já trazidos pelo Expo, com hooks e componentes nativos simulados. Verificam eventos da interface, navegação e lógica da calculadora; não substituem testes visuais em Android.
+Os testes usam `node:test` e os transformadores Babel já trazidos pelo Expo, com hooks e componentes nativos simulados. Verificam eventos da interface, navegação e lógica da calculadora; não substituem testes visuais em Android e iOS.
 
-Para mudanças no aplicativo, execute-o no celular e teste, pelo menos:
+Para mudanças no aplicativo, verifique o fluxo em Android e iOS, respeitando os comportamentos próprios de cada plataforma. Registre o que foi validado e o que ficou pendente. Teste, pelo menos:
 
 - Tela inicial com espaço para a logo, título, descrição e opções de telefone/e-mail.
 - Alternar entre telefone e e-mail: teclado adequado e valores independentes.
