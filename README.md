@@ -2,7 +2,9 @@
 
 Aplicativo mobile em **JavaScript**, com React Native, Expo e npm. Este guia ajuda um segundo desenvolvedor a preparar o ambiente, executar o projeto e colaborar pelo GitHub.
 
-A tela apresenta altura antes de peso, calcula o IMC com duas casas decimais e exibe a classificação para adultos. Aceita peso como `70`, `70,5` ou `70.5` e altura como `175`, `1,75` ou `1.75`. Alturas a partir de 10 são interpretadas em centímetros. Ainda não há histórico, autenticação ou banco de dados.
+O aplicativo inicia em uma tela de boas-vindas com espaço reservado para a logo da clínica, opções de telefone/e-mail e acesso demonstrativo pelo botão **Continuar**. Não há autenticação real: é possível continuar com o campo vazio, e nenhum dado de acesso é enviado ou persistido. **Criar conta** apenas exibe um aviso sobre a próxima etapa.
+
+A tela da calculadora apresenta altura antes de peso, calcula o IMC com duas casas decimais e exibe a classificação para adultos. Aceita peso como `70`, `70,5` ou `70.5` e altura como `175`, `1,75` ou `1.75`. Alturas a partir de 10 são interpretadas em centímetros. Ainda não há histórico, autenticação ou banco de dados.
 
 ## 1. Instalar Node.js, npm e Git
 
@@ -72,7 +74,7 @@ Esse comando instala as dependências nas versões registradas em `package-lock.
 | --- | --- | --- |
 | React | `19.2.3` | Componentes e estado da interface |
 | React Native | `0.86.3` | Componentes nativos para Android e iOS |
-| Expo | `~57.0.23` | Ferramentas para executar e compilar o aplicativo |
+| Expo | `~57.0.24` | Ferramentas para executar e compilar o aplicativo |
 
 O projeto usa npm. Preserve o `package-lock.json` e não misture outros gerenciadores de pacotes. Para uma instalação após o clone, prefira `npm ci`; `npm install` é usado quando a equipe pretende adicionar ou atualizar dependências e atualizar o lockfile. [Documentação do npm ci](https://docs.npmjs.com/cli/v11/commands/npm-ci/).
 
@@ -107,7 +109,12 @@ Se o celular não conectar, confirme a rede Wi-Fi e a compatibilidade do Expo Go
 
 | Arquivo ou pasta | Responsabilidade |
 | --- | --- |
-| `App.js` | Tela, estados dos campos, validação, cálculo e classificação |
+| `App.js` | Entrada do aplicativo; renderiza o navegador local |
+| `src/navigation/AppNavigator.js` | Fluxo temporário entre login e calculadora; voltar no Android retorna ao login |
+| `src/screens/LoginScreen.js` | Interface de boas-vindas, telefone/e-mail e ações demonstrativas |
+| `src/screens/CalculatorScreen.js` | Calculadora existente, preservada com validação, cálculo, classificação e estilos |
+| `src/components/ClinicLogo.js` | Espaço reservado para substituir pela logo oficial no futuro |
+| `tests/app.test.cjs` | Testes de lógica, eventos de acesso, navegação e regressão da calculadora |
 | `index.js` | Registro do componente principal no Expo |
 | `app.json` | Configuração do aplicativo e ícones |
 | `package.json` | Dependências e comandos npm |
@@ -116,7 +123,7 @@ Se o celular não conectar, confirme a rede Wi-Fi e a compatibilidade do Expo Go
 | `.gitignore` | Arquivos locais e dependências que não entram no Git |
 | `README.md` | Guia de instalação e colaboração |
 
-O código do aplicativo usa JavaScript, sem TypeScript.
+O código do aplicativo usa JavaScript, sem TypeScript. Novas telas poderão ser criadas em `src/screens`, componentes reutilizáveis em `src/components` e a navegação evoluirá em `src/navigation`. Nesta etapa só existem login e calculadora; o estado local de navegação não representa uma sessão autenticada. Nenhuma dependência foi adicionada.
 
 ## 6. Colaborar usando Git e pull request
 
@@ -172,7 +179,22 @@ Se você não tiver permissão para enviar branches ao repositório, peça acess
 
 ## 7. Verificar antes de pedir revisão
 
-Para documentação, confira os comandos, a formatação e `git diff --check`. Para mudanças no aplicativo, execute-o e teste, pelo menos:
+Para documentação, confira os comandos, a formatação e `git diff --check`. Execute os testes automatizados disponíveis:
+
+```sh
+npm test
+```
+
+Os testes usam `node:test` e os transformadores Babel já trazidos pelo Expo, com hooks e componentes nativos simulados. Verificam eventos da interface, navegação e lógica da calculadora; não substituem testes visuais em Android.
+
+Para mudanças no aplicativo, execute-o no celular e teste, pelo menos:
+
+- Tela inicial com espaço para a logo, título, descrição e opções de telefone/e-mail.
+- Alternar entre telefone e e-mail: teclado adequado e valores independentes.
+- **Continuar**, inclusive com campo vazio, abre a calculadora.
+- **Criar conta** mostra o aviso e não abre cadastro nem realiza autenticação.
+- Botão/gesto de voltar do Android, com o teclado fechado, retorna da calculadora ao login.
+- Em tela pequena ou com fonte ampliada, conteúdo rolável e controles acessíveis acima do teclado.
 
 - Altura antes de peso na tela.
 - Peso `70` com altura `175`, `1,75` e `1.75`: IMC `22,86` e classificação `Peso adequado`.
@@ -185,6 +207,6 @@ A compilação JavaScript das duas plataformas pode ser verificada com:
 npx expo export --platform android --platform ios
 ```
 
-Isso gera bundles em `dist/`; não instala o app no celular nem substitui um teste em dispositivo. Não há script `npm test` configurado neste projeto.
+Isso gera bundles em `dist/`; não instala o app no celular nem substitui um teste em dispositivo.
 
 Na configuração inicial, o npm registrou 10 alertas moderados na cadeia de dependências do Expo, sem correção automática compatível naquele momento. Esse é um registro da instalação inicial; use `npm audit` para consultar a situação atual. Atualizações de dependências devem ser avaliadas separadamente de mudanças de documentação.
