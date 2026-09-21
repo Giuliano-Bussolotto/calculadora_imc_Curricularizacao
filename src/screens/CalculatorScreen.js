@@ -4,64 +4,60 @@ import {
   Keyboard,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
+  StatusBar,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
+import { assessBmi } from '../domain/imc/assessment';
 
 export default function CalculatorScreen() {
+  const [dataNascimento, setDataNascimento] = useState('');
+  const [sexo, setSexo] = useState('');
   const [peso, setPeso] = useState('');
   const [altura, setAltura] = useState('');
-  const [resultado, setResultado] = useState('Informe seu peso e sua altura.');
+  const [resultado, setResultado] = useState('Informe data de nascimento, sexo, altura e peso.');
 
   function calcularIMC() {
-    const pesoTexto = peso.trim().replace(',', '.');
-    const alturaTexto = altura.trim().replace(',', '.');
-    const numeroDecimal = /^(?:\d+(?:\.\d*)?|\.\d+)$/;
-    const pesoNumero = Number(pesoTexto);
-    const alturaNumero = Number(alturaTexto);
-
-    if (
-      !numeroDecimal.test(pesoTexto) ||
-      !numeroDecimal.test(alturaTexto) ||
-      !Number.isFinite(pesoNumero) ||
-      !Number.isFinite(alturaNumero) ||
-      pesoNumero <= 0 ||
-      alturaNumero <= 0
-    ) {
-      setResultado('Informe peso e altura válidos, maiores que zero.');
+    const evaluation = assessBmi({ birthDate: dataNascimento, sex: sexo, weight: peso, height: altura });
+    if (evaluation.status === 'invalid') {
+      setResultado(evaluation.message);
       return;
     }
-
-    // Alturas a partir de 10 são interpretadas em centímetros (175 → 1.75 m).
-    const alturaMetros = alturaNumero >= 10 ? alturaNumero / 100 : alturaNumero;
-    const imc = pesoNumero / (alturaMetros * alturaMetros);
-
-    if (!Number.isFinite(imc) || imc < 0.005 || imc >= 1e21) {
-      setResultado('Confira os valores de peso e altura informados.');
-      return;
-    }
-
-    // Faixas de classificação do IMC para adultos, antes do arredondamento.
-    let classificacao;
-    if (imc < 18.5) {
-      classificacao = 'Abaixo do peso';
-    } else if (imc < 25) {
-      classificacao = 'Peso adequado';
-    } else if (imc < 30) {
-      classificacao = 'Sobrepeso';
-    } else if (imc < 35) {
-      classificacao = 'Obesidade grau I';
-    } else if (imc < 40) {
-      classificacao = 'Obesidade grau II';
-    } else {
-      classificacao = 'Obesidade grau III';
-    }
-
     Keyboard.dismiss();
-    setResultado(`IMC: ${imc.toFixed(2).replace('.', ',')}\nClassificação (adultos): ${classificacao}.`);
+    if (evaluation.status === 'unsupported') {
+      setResultado(evaluation.message);
+      return;
+    }
+    const { years, months } = evaluation.age;
+    const idade = `Idade: ${years} ${years === 1 ? 'ano' : 'anos'} e ${months} ${months === 1 ? 'mês' : 'meses'}`;
+    const imc = `IMC: ${evaluation.bmi.toFixed(2).replace('.', ',')}`;
+    if (evaluation.status !== 'classified') {
+      setResultado(`${idade}\n${imc}\n${evaluation.message}`);
+      return;
+    }
+    const classification = evaluation.protocol === 'who2007'
+      ? `Classificação IMC por idade: ${evaluation.classification}.\nReferência: WHO 2007.`
+      : `Classificação (adultos): ${evaluation.classification}.`;
+    setResultado(`${idade}\n${imc}\n${classification}`);
+  }
+
+  function atualizarDataNascimento(value) {
+    const digits = value.replace(/\//g, '');
+    // Máscara visual; a data civil completa é validada no domínio, sem idade fixa.
+    const formatted = /^\d{0,8}$/.test(digits)
+      ? digits.replace(/^(\d{2})(\d)/, '$1/$2').replace(/^(\d{2})\/(\d{2})(\d)/, '$1/$2/$3')
+      : value;
+    setDataNascimento(formatted);
+    setResultado('Toque em Calcular para ver o resultado.');
+  }
+
+  function atualizarSexo(value) {
+    setSexo(value);
+    setResultado('Toque em Calcular para ver o resultado.');
   }
 
   function atualizarPeso(valor) {
@@ -85,6 +81,43 @@ export default function CalculatorScreen() {
       >
         <View style={styles.form}>
           <Text style={styles.title}>Calculadora IMC</Text>
+
+          <Text style={styles.label}>Data de nascimento</Text>
+          <TextInput
+            style={styles.input}
+            accessibilityLabel="Data de nascimento"
+            accessibilityHint="Informe dia, mês e ano. As barras são inseridas automaticamente."
+            placeholder="DD/MM/AAAA"
+            placeholderTextColor="#777"
+            keyboardType="number-pad"
+            autoCorrect={false}
+            maxLength={10}
+            value={dataNascimento}
+            onChangeText={atualizarDataNascimento}
+          />
+
+          <Text style={styles.label}>Sexo</Text>
+          <Text style={styles.hint}>Referência de crescimento: meninos ou meninas.</Text>
+          <View style={styles.sexOptions} accessibilityRole="radiogroup">
+            <Pressable
+              accessibilityRole="radio"
+              accessibilityLabel="Masculino — referência meninos"
+              accessibilityState={{ checked: sexo === 'male' }}
+              onPress={() => atualizarSexo('male')}
+              style={({ pressed }) => [styles.sexOption, sexo === 'male' && styles.selectedSex, pressed && styles.pressed]}
+            >
+              <Text style={[styles.sexText, sexo === 'male' && styles.selectedSexText]}>Masculino</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="radio"
+              accessibilityLabel="Feminino — referência meninas"
+              accessibilityState={{ checked: sexo === 'female' }}
+              onPress={() => atualizarSexo('female')}
+              style={({ pressed }) => [styles.sexOption, sexo === 'female' && styles.selectedSex, pressed && styles.pressed]}
+            >
+              <Text style={[styles.sexText, sexo === 'female' && styles.selectedSexText]}>Feminino</Text>
+            </Pressable>
+          </View>
 
           <Text style={styles.label}>Altura (m)</Text>
           <TextInput
@@ -128,7 +161,9 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 24,
+    paddingHorizontal: 24,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 24 : 60,
+    paddingBottom: 48,
   },
   form: {
     width: '100%',
@@ -155,6 +190,33 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 20,
   },
+  hint: {
+    color: '#555',
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 10,
+  },
+  sexOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 20,
+  },
+  sexOption: {
+    flex: 1,
+    minWidth: 110,
+    minHeight: 48,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#999',
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  selectedSex: { backgroundColor: '#2458a6', borderColor: '#2458a6' },
+  sexText: { color: '#333', fontSize: 16 },
+  selectedSexText: { color: '#fff' },
+  pressed: { opacity: 0.75 },
   result: {
     color: '#333',
     fontSize: 18,

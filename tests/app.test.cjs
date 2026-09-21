@@ -4,6 +4,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const { test } = require('node:test');
 const babel = require('@babel/core');
+const { assessBmi } = require('../src/domain/imc/assessment');
 
 // Testes de lógica/eventos com hooks simulados. Não substituem renderização nativa.
 // Os transformadores Babel já são instalados pelo Expo; não há dependências novas.
@@ -98,15 +99,20 @@ function login(options = {}) {
   });
 }
 function calculator() {
-  return renderComponent('src/screens/CalculatorScreen.js');
+  return renderComponent('src/screens/CalculatorScreen.js', {
+    imports: { '../domain/imc/assessment': { assessBmi: input => assessBmi(input, '2026-09-20') } },
+  });
 }
-function calculate(component, weight, height) {
+function calculate(component, weight, height, { birthDate = '20/09/1996', sex = 'male' } = {}) {
   const tree = component.render();
   const fields = nodes(tree, node => node.type === 'TextInput');
-  assert.equal(fields[0].props.accessibilityLabel, 'Altura em metros');
-  assert.equal(fields[1].props.accessibilityLabel, 'Peso em quilogramas');
-  fields[0].props.onChangeText(height);
-  fields[1].props.onChangeText(weight);
+  assert.equal(fields[0].props.accessibilityLabel, 'Data de nascimento');
+  assert.equal(fields[1].props.accessibilityLabel, 'Altura em metros');
+  assert.equal(fields[2].props.accessibilityLabel, 'Peso em quilogramas');
+  fields[0].props.onChangeText(birthDate);
+  byLabel(component.render(), sex === 'male' ? 'Masculino — referência meninos' : 'Feminino — referência meninas').props.onPress();
+  fields[1].props.onChangeText(height);
+  fields[2].props.onChangeText(weight);
   nodes(component.render(), node => node.type === 'Button')[0].props.onPress();
   return nodes(component.render(), node => node.props?.accessibilityLiveRegion === 'polite')[0].props.children;
 }
@@ -184,7 +190,7 @@ test('fluxo Login → Calculadora calcula IMC; voltar do Android retorna ao logi
   byLabel(login().render(initial.props), 'Continuar').props.onPress();
   assert.equal(navigator.render().type, 'CalculatorScreen');
   assert.equal(listeners.size, 1);
-  assert.equal(calculate(calculator(), '70', '175'), 'IMC: 22,86\nClassificação (adultos): Peso adequado.');
+  assert.equal(calculate(calculator(), '70', '175'), 'Idade: 30 anos e 0 meses\nIMC: 22,86\nClassificação (adultos): Peso adequado.');
   assert.equal([...listeners][0](), true);
   assert.equal(navigator.render().type, 'LoginScreen');
   assert.equal(listeners.size, 0);
@@ -198,13 +204,13 @@ for (const weight of ['70', '70,5', '70.5']) {
   for (const height of ['175', '1,75', '1.75']) {
     test(`calculadora preservada: peso ${weight}, altura ${height}`, () => {
       const value = weight === '70' ? '22,86' : '23,02';
-      assert.equal(calculate(calculator(), weight, height), `IMC: ${value}\nClassificação (adultos): Peso adequado.`);
+      assert.equal(calculate(calculator(), weight, height), `Idade: 30 anos e 0 meses\nIMC: ${value}\nClassificação (adultos): Peso adequado.`);
     });
   }
 }
 
 for (const [bmi, category] of [
-  [17, 'Abaixo do peso'], [18.49, 'Abaixo do peso'], [18.499, 'Abaixo do peso'],
+  [17, 'Baixo peso'], [18.49, 'Baixo peso'], [18.499, 'Baixo peso'],
   [18.5, 'Peso adequado'], [24.99, 'Peso adequado'], [24.999, 'Peso adequado'],
   [25, 'Sobrepeso'], [29.99, 'Sobrepeso'], [29.999, 'Sobrepeso'],
   [30, 'Obesidade grau I'], [34.99, 'Obesidade grau I'],
@@ -233,4 +239,74 @@ test('editar altura ou peso substitui o resultado antigo da calculadora', () => 
     const result = nodes(component.render(), node => node.props?.accessibilityLiveRegion === 'polite')[0];
     assert.equal(result.props.children, 'Toque em Calcular para ver o resultado.');
   }
+});
+
+
+test('campos na ordem nascimento, sexo, altura, peso e calcular, sem sexo inferido', () => {
+  const tree = calculator().render();
+  const controls = nodes(tree, node => ['TextInput', 'Pressable', 'Button'].includes(node.type));
+  assert.deepEqual(controls.map(node => node.props.accessibilityLabel || node.props.title), [
+    'Data de nascimento', 'Masculino — referência meninos', 'Feminino — referência meninas',
+    'Altura em metros', 'Peso em quilogramas', 'Calcular',
+  ]);
+  assert.equal(controls[1].props.accessibilityState.checked, false);
+  assert.equal(controls[2].props.accessibilityState.checked, false);
+});
+
+test('máscara de nascimento aceita oito dígitos e datas impossíveis são rejeitadas', () => {
+  const component = calculator();
+  byLabel(component.render(), 'Data de nascimento').props.onChangeText('31022015');
+  assert.equal(byLabel(component.render(), 'Data de nascimento').props.value, '31/02/2015');
+  nodes(component.render(), node => node.type === 'Button')[0].props.onPress();
+  assert.match(nodes(component.render(), node => node.props?.accessibilityLiveRegion === 'polite')[0].props.children, /data de nascimento válida/);
+});
+
+test('criança tem idade, IMC e classificação WHO 2007 sem mostrar o Z técnico', () => {
+  const result = calculate(calculator(), '30', '130', { birthDate: '20/09/2016', sex: 'female' });
+  assert.match(result, /Idade: 10 anos/);
+  assert.match(result, /IMC: 17,75/);
+  assert.match(result, /Classificação IMC por idade/);
+  assert.match(result, /WHO 2007/);
+  assert.doesNotMatch(result, /Escore|Z-score/);
+});
+
+for (const [birthDate, message] of [
+  ['20/09/2023', 'A avaliação para menores de 5 anos ainda não está disponível nesta versão.'],
+  ['20/09/2021', 'A classificação WHO 2007 não está disponível para esta idade na implementação atual. A referência incorporada cobre de 61 a 228 meses completos. Solicite avaliação à equipe da clínica.'],
+  ['20/03/2007', 'A classificação WHO 2007 não está disponível para esta idade na implementação atual. A referência incorporada cobre de 61 a 228 meses completos. Solicite avaliação à equipe da clínica.'],
+  ['20/09/1966', 'A avaliação específica para pessoas com 60 anos ou mais ainda não está disponível nesta versão.'],
+  ['20/09/1946', 'A avaliação específica para pessoas com 60 anos ou mais ainda não está disponível nesta versão.'],
+]) {
+  for (const sex of ['male', 'female']) {
+    test(`faixa não suportada exibe somente aviso: ${birthDate}, ${sex}`, () => {
+      const result = calculate(calculator(), '40', '150', { birthDate, sex });
+      assert.equal(result, message);
+      assert.doesNotMatch(result, /IMC:|Idade:|Classificação \(adultos\):|Classificação IMC por idade:|Referência:/);
+    });
+  }
+}
+
+test('trocar faixa suportada por não suportada remove o IMC e a classificação anteriores', () => {
+  const component = calculator();
+  assert.match(calculate(component, '70', '175'), /IMC: 22,86/);
+  const unsupported = calculate(component, '70', '175', { birthDate: '20/09/1966' });
+  assert.equal(unsupported, 'A avaliação específica para pessoas com 60 anos ou mais ainda não está disponível nesta versão.');
+  const pediatric = calculate(component, '30', '130', { birthDate: '20/09/2016', sex: 'female' });
+  assert.match(pediatric, /Idade: 10 anos/);
+  assert.match(pediatric, /IMC: 17,75/);
+  assert.match(pediatric, /Classificação IMC por idade:.*\nReferência: WHO 2007\./);
+  const outsideCoverage = calculate(component, '30', '130', { birthDate: '20/09/2021', sex: 'female' });
+  assert.match(outsideCoverage, /^A classificação WHO 2007 não está disponível/);
+  assert.doesNotMatch(outsideCoverage, /IMC:|Idade:|Classificação IMC por idade:|Referência:/);
+  assert.equal(calculate(component, '70', '175'), 'Idade: 30 anos e 0 meses\nIMC: 22,86\nClassificação (adultos): Peso adequado.');
+});
+
+test('editar data de nascimento ou sexo invalida o resultado anterior', () => {
+  const component = calculator();
+  calculate(component, '70', '175');
+  byLabel(component.render(), 'Data de nascimento').props.onChangeText('20092015');
+  assert.equal(nodes(component.render(), node => node.props?.accessibilityLiveRegion === 'polite')[0].props.children, 'Toque em Calcular para ver o resultado.');
+  calculate(component, '70', '175');
+  byLabel(component.render(), 'Feminino — referência meninas').props.onPress();
+  assert.equal(nodes(component.render(), node => node.props?.accessibilityLiveRegion === 'polite')[0].props.children, 'Toque em Calcular para ver o resultado.');
 });
