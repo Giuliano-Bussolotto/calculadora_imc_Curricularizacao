@@ -218,3 +218,6 @@ O projeto continuará evoluindo gradualmente. Entre as funcionalidades planejada
 Este projeto ainda está em desenvolvimento.
 
 As classificações relacionadas à saúde são implementadas a partir das referências documentadas no projeto, mas novas funcionalidades e protocolos devem ser revisados e validados antes do uso em ambiente clínico.
+## Design e protótipo
+O protótipo de interface e o fluxo de navegação foram desenvolvidos no Penpot.
+[Visualizar o protótipo no Penpot](https://design.penpot.app/#/view?file-id=d8ac01df-6646-81d2-8008-acf1ccf778f9&page-id=8f3740fe-e550-8043-8008-acf707895cc5&section=interactions&index=0&share-id=f356ff39-5288-4ecf-898d-e699e2e55ce6)
