@@ -291,6 +291,16 @@ test('criança tem idade, IMC e classificação WHO 2007 sem mostrar o Z técnic
   assert.doesNotMatch(result, /Escore|Z-score/);
 });
 
+test('resultado reserva um card vazio para futura mensagem com IA', () => {
+  const component = calculator();
+  const label = 'Espaço reservado para futura mensagem com inteligência artificial';
+  assert.equal(nodes(component.render(), node => node.props?.accessibilityLabel === label).length, 0);
+  calculate(component, '70', '175');
+  const card = byLabel(component.render(), label);
+  assert.equal(card.type, 'View');
+  assert.equal(card.props.children, undefined);
+});
+
 for (const [birthDate, message] of [
   ['20/09/2023', 'A avaliação para menores de 5 anos ainda não está disponível nesta versão.'],
   ['20/09/2021', 'A classificação WHO 2007 não está disponível para esta idade na implementação atual. A referência incorporada cobre de 61 a 228 meses completos. Solicite avaliação à equipe da clínica.'],
