@@ -1,4 +1,4 @@
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useState } from 'react';
 import AppIcon from '../components/AppIcon';
 import { editMode } from '../domain/feed/postPermissions';
@@ -18,6 +18,9 @@ export default function FeedScreen({ currentUser = { id: 'patient-ana', role: 'p
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
   const [editRequested, setEditRequested] = useState(false);
+  const [myPostText, setMyPostText] = useState('Hoje completei minha caminhada e cuidei um pouco mais de mim.');
+  const [draft, setDraft] = useState(myPostText);
+  const [editingMyPost, setEditingMyPost] = useState(false);
   const featuredEditMode = editMode(currentUser, featuredPost);
 
   function createPost() {
@@ -133,6 +136,61 @@ export default function FeedScreen({ currentUser = { id: 'patient-ana', role: 'p
           <Text style={styles.compactText}>Movimento consciente também é uma forma de autocuidado.</Text>
         </View>
       </View>
+
+      {currentUser.role === 'patient' && (
+        <View style={styles.myPost} accessibilityLabel="Minha publicação">
+          <View style={styles.authorRowCompact}>
+            <View style={styles.avatarPatient}><Text style={styles.avatarText}>A</Text></View>
+            <View style={styles.compactContent}>
+              <Text style={styles.author}>Ana</Text>
+              <Text style={styles.authorMeta}>Minha publicação · hoje</Text>
+            </View>
+          </View>
+
+          {editingMyPost ? (
+            <TextInput
+              accessibilityLabel="Texto da minha publicação"
+              value={draft}
+              onChangeText={setDraft}
+              multiline
+              style={styles.postInput}
+            />
+          ) : <Text style={styles.compactText}>{myPostText}</Text>}
+
+          <View style={styles.myPostActions}>
+            {editingMyPost ? (
+              <>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Cancelar edição da minha publicação"
+                  onPress={() => { setDraft(myPostText); setEditingMyPost(false); }}
+                  style={styles.secondaryButton}
+                >
+                  <Text style={styles.secondaryButtonText}>Cancelar</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Salvar minha publicação"
+                  disabled={!draft.trim()}
+                  onPress={() => { setMyPostText(draft.trim()); setEditingMyPost(false); }}
+                  style={[styles.saveButton, !draft.trim() && styles.disabled]}
+                >
+                  <Text style={styles.saveButtonText}>Salvar</Text>
+                </Pressable>
+              </>
+            ) : (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Editar minha publicação"
+                onPress={() => setEditingMyPost(true)}
+                style={styles.secondaryButton}
+              >
+                <Text style={styles.secondaryButtonText}>Editar minha publicação</Text>
+              </Pressable>
+            )}
+          </View>
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -151,6 +209,7 @@ const styles = StyleSheet.create({
   authorRow: { flexDirection: 'row', alignItems: 'center', padding: 16, paddingBottom: 12 },
   avatar: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 22, backgroundColor: '#F8D8BA' },
   avatarPilates: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 22, backgroundColor: '#D8E8FC' },
+  avatarPatient: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 22, backgroundColor: '#DDF1DF' },
   avatarText: { color: colors.text, fontSize: 17, fontWeight: '900' },
   authorText: { marginLeft: 11 },
   author: { color: colors.text, fontSize: 14, fontWeight: '800' },
@@ -175,7 +234,15 @@ const styles = StyleSheet.create({
   bookmark: { color: colors.muted, fontSize: 24 },
   saved: { color: colors.primary },
   postCompact: { marginTop: 14, flexDirection: 'row', padding: 16, borderRadius: 20, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
+  myPost: { marginTop: 14, padding: 16, borderRadius: 20, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
+  authorRowCompact: { flexDirection: 'row', alignItems: 'center' },
   compactContent: { flex: 1, marginLeft: 11 },
   compactText: { marginTop: 10, color: colors.text, fontSize: 14, lineHeight: 20 },
+  postInput: { minHeight: 90, marginTop: 13, padding: 12, borderRadius: 14, borderWidth: 1, borderColor: colors.primary, color: colors.text, fontSize: 14, textAlignVertical: 'top' },
+  myPostActions: { marginTop: 13, flexDirection: 'row', justifyContent: 'flex-end', gap: 8 },
+  secondaryButton: { minHeight: 48, paddingHorizontal: 14, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: colors.primarySoft },
+  secondaryButtonText: { color: colors.primaryDark, fontSize: 12, fontWeight: '800' },
+  saveButton: { minHeight: 48, minWidth: 92, paddingHorizontal: 14, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: colors.primary },
+  saveButtonText: { color: '#FFFFFF', fontSize: 12, fontWeight: '800' },
   pressed: { opacity: 0.7 },
 });

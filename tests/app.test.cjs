@@ -196,6 +196,30 @@ test('botão de solicitação de edição confirma o envio e evita repetição',
   assert.equal(sent.props.disabled, true);
   assert.equal(nodes(sent, node => node.type === 'Text')[0].props.children, 'Solicitação enviada');
 });
+
+test('Paciente edita somente a própria publicação e não salva conteúdo vazio', () => {
+  const component = renderComponent('src/screens/FeedScreen.js', {
+    imports: {
+      '../components/AppIcon': 'AppIcon',
+      '../domain/feed/postPermissions': require('../src/domain/feed/postPermissions'),
+      '../theme': { colors: {}, shadows: { card: {} } },
+    },
+  });
+  const props = { currentUser: { id: 'patient-ana', role: 'patient' } };
+  let tree = component.render(props);
+  assert.equal(nodes(tree, node => /edição da publicação/.test(node.props?.accessibilityLabel || '')).length, 0);
+  byLabel(tree, 'Editar minha publicação').props.onPress();
+  tree = component.render(props);
+  const field = byLabel(tree, 'Texto da minha publicação');
+  field.props.onChangeText('  Minha evolução desta semana.  ');
+  byLabel(component.render(props), 'Salvar minha publicação').props.onPress();
+  tree = component.render(props);
+  assert.equal(nodes(tree, node => node.type === 'Text' && node.props.children === 'Minha evolução desta semana.').length, 1);
+
+  byLabel(tree, 'Editar minha publicação').props.onPress();
+  byLabel(component.render(props), 'Texto da minha publicação').props.onChangeText('   ');
+  assert.equal(byLabel(component.render(props), 'Salvar minha publicação').props.disabled, true);
+});
 function calculate(component, weight, height, { birthDate = '20/09/1996', sex = 'male' } = {}) {
   const tree = component.render();
   const fields = nodes(tree, node => node.type === 'TextInput');
