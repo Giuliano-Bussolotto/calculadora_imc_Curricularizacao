@@ -1,13 +1,21 @@
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import AppIcon from '../components/AppIcon';
 import { roles } from '../domain/access/roles';
+import { canCreateSupervisor } from '../domain/access/supervisorCreation';
 import { colors, shadows } from '../theme';
 
-export default function RolesScreen({ onBack, onSelectRole }) {
+export default function RolesScreen({ onBack, onSelectRole, currentUser = { id: 'supervisor-yenny', role: 'supervisor' } }) {
   function createRole() {
     Alert.alert(
       'Criar nova função',
       'O formulário será conectado ao backend na próxima etapa. A função deverá definir módulos e permissões antes de ser ativada.',
+    );
+  }
+
+  function createSupervisor() {
+    Alert.alert(
+      'Novo Supervisor/Diretor',
+      'Permissão confirmada. O convite será enviado quando a integração com o backend estiver disponível.',
     );
   }
 
@@ -58,6 +66,17 @@ export default function RolesScreen({ onBack, onSelectRole }) {
         <AppIcon name="plus" active size={22} />
         <Text style={styles.primaryButtonText}>Criar nova função</Text>
       </Pressable>
+
+      {canCreateSupervisor(currentUser) && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Criar novo Supervisor ou Diretor"
+          onPress={createSupervisor}
+          style={({ pressed }) => [styles.adminButton, pressed && styles.pressed]}
+        >
+          <Text style={styles.adminButtonText}>Criar Supervisor/Diretor</Text>
+        </Pressable>
+      )}
     </ScrollView>
   );
 }
@@ -81,5 +100,7 @@ const styles = StyleSheet.create({
   statusText: { color: '#26784A', fontSize: 10, fontWeight: '800' },
   primaryButton: { minHeight: 52, marginTop: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: 16, backgroundColor: colors.primarySoft, borderWidth: 1, borderColor: '#CFE6FF' },
   primaryButtonText: { marginLeft: 7, color: colors.primaryDark, fontSize: 14, fontWeight: '800' },
+  adminButton: { minHeight: 52, marginTop: 10, alignItems: 'center', justifyContent: 'center', borderRadius: 16, backgroundColor: colors.primary },
+  adminButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '800' },
   pressed: { opacity: 0.72, transform: [{ scale: 0.99 }] },
 });

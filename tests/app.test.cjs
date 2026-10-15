@@ -123,6 +123,7 @@ test('cargos da clínica ficam centralizados e permitem abrir o fluxo de nova fu
     imports: {
       '../components/AppIcon': 'AppIcon',
       '../domain/access/roles': { roles },
+      '../domain/access/supervisorCreation': require('../src/domain/access/supervisorCreation'),
       '../theme': { colors: {}, shadows: { card: {} } },
     },
     native: { Alert: { alert(...args) { notice = args; } } },
@@ -135,6 +136,33 @@ test('cargos da clínica ficam centralizados e permitem abrir o fluxo de nova fu
   byLabel(tree, 'Criar nova função').props.onPress();
   assert.equal(notice[0], 'Criar nova função');
   assert.match(notice[1], /backend/);
+});
+
+test('somente Yenny e Yohgenson podem criar Supervisor ou Diretor', () => {
+  const { CURRENT_SUPERVISOR_CREATORS, canCreateSupervisor } = require('../src/domain/access/supervisorCreation');
+  assert.deepEqual(CURRENT_SUPERVISOR_CREATORS.map(user => user.name), ['Yenny', 'Yohgenson']);
+  assert.equal(canCreateSupervisor({ id: 'supervisor-yenny', role: 'supervisor' }), true);
+  assert.equal(canCreateSupervisor({ id: 'supervisor-yohgenson', role: 'supervisor' }), true);
+  assert.equal(canCreateSupervisor({ id: 'supervisor-new', role: 'supervisor' }), false);
+  assert.equal(canCreateSupervisor({ id: 'supervisor-yenny', role: 'doctor' }), false);
+
+  let notice;
+  const { roles } = require('../src/domain/access/roles');
+  const component = renderComponent('src/screens/RolesScreen.js', {
+    imports: {
+      '../components/AppIcon': 'AppIcon',
+      '../domain/access/roles': { roles },
+      '../domain/access/supervisorCreation': { canCreateSupervisor },
+      '../theme': { colors: {}, shadows: { card: {} } },
+    },
+    native: { Alert: { alert(...args) { notice = args; } } },
+  });
+  const authorized = component.render({ onBack() {}, onSelectRole() {}, currentUser: { id: 'supervisor-yenny', role: 'supervisor' } });
+  byLabel(authorized, 'Criar novo Supervisor ou Diretor').props.onPress();
+  assert.equal(notice[0], 'Novo Supervisor/Diretor');
+
+  const blocked = component.render({ onBack() {}, onSelectRole() {}, currentUser: { id: 'supervisor-new', role: 'supervisor' } });
+  assert.equal(nodes(blocked, node => node.props?.accessibilityLabel === 'Criar novo Supervisor ou Diretor').length, 0);
 });
 
 test('Psicóloga acessa somente solicitações de edição e menções', () => {
