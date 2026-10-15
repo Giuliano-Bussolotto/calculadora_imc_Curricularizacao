@@ -164,6 +164,38 @@ test('dados pessoais e agendas ficam visíveis apenas ao proprietário ou Superv
   assert.deepEqual(visibleOwnedResources(admin, resources).map(item => item.id), ['a', 'b', 'c']);
   assert.equal(canViewOwnedResource(ana, { type: 'unknown', ownerId: ana.id }), false);
 });
+
+test('edição de publicações respeita autoria, menção e solicitação profissional', () => {
+  const { editMode, canEditPost, canRequestPostEdit } = require('../src/domain/feed/postPermissions');
+  const post = { authorId: 'nutritionist-1', mentionedUserIds: ['doctor-mentioned'] };
+  const author = { id: 'nutritionist-1', role: 'nutritionist' };
+  const mentionedDoctor = { id: 'doctor-mentioned', role: 'doctor' };
+  const otherDoctor = { id: 'doctor-other', role: 'doctor' };
+  const patient = { id: 'patient-1', role: 'patient' };
+
+  assert.equal(editMode(author, post), 'direct');
+  assert.equal(canEditPost(mentionedDoctor, post), true);
+  assert.equal(canRequestPostEdit(otherDoctor, post), true);
+  assert.equal(editMode(patient, post), 'none');
+  assert.equal(canEditPost(patient, post), false);
+});
+
+test('botão de solicitação de edição confirma o envio e evita repetição', () => {
+  const component = renderComponent('src/screens/FeedScreen.js', {
+    imports: {
+      '../components/AppIcon': 'AppIcon',
+      '../domain/feed/postPermissions': require('../src/domain/feed/postPermissions'),
+      '../theme': { colors: {}, shadows: { card: {} } },
+    },
+  });
+  const props = { currentUser: { id: 'doctor-other', role: 'doctor' } };
+  const button = byLabel(component.render(props), 'Solicitar edição da publicação');
+  assert.equal(button.props.disabled, false);
+  button.props.onPress();
+  const sent = byLabel(component.render(props), 'Solicitar edição da publicação');
+  assert.equal(sent.props.disabled, true);
+  assert.equal(nodes(sent, node => node.type === 'Text')[0].props.children, 'Solicitação enviada');
+});
 function calculate(component, weight, height, { birthDate = '20/09/1996', sex = 'male' } = {}) {
   const tree = component.render();
   const fields = nodes(tree, node => node.type === 'TextInput');

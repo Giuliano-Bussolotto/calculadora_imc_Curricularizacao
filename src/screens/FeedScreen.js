@@ -1,14 +1,24 @@
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useState } from 'react';
 import AppIcon from '../components/AppIcon';
+import { editMode } from '../domain/feed/postPermissions';
 import { colors, shadows } from '../theme';
 
 const filters = ['Todos', 'Nutrição', 'Pilates', 'Saúde Mental'];
 
-export default function FeedScreen() {
+const featuredPost = {
+  id: 'post-nutrition-1',
+  authorId: 'nutritionist-juliana',
+  authorRole: 'nutritionist',
+  mentionedUserIds: [],
+};
+
+export default function FeedScreen({ currentUser = { id: 'patient-ana', role: 'patient' } }) {
   const [activeFilter, setActiveFilter] = useState('Todos');
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [editRequested, setEditRequested] = useState(false);
+  const featuredEditMode = editMode(currentUser, featuredPost);
 
   function createPost() {
     Alert.alert('Nova publicação', 'A criação de publicações será habilitada conforme as permissões do perfil profissional.');
@@ -58,6 +68,23 @@ export default function FeedScreen() {
         <Text style={styles.postText}>
           Uma alimentação equilibrada é a base para mais energia e qualidade de vida. <Text style={styles.blueHeart}>♥</Text>
         </Text>
+
+        {featuredEditMode !== 'none' && (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={featuredEditMode === 'direct' ? 'Editar publicação' : 'Solicitar edição da publicação'}
+            disabled={editRequested}
+            onPress={() => {
+              if (featuredEditMode === 'direct') Alert.alert('Editar publicação', 'A edição será salva localmente até a integração com o backend.');
+              else setEditRequested(true);
+            }}
+            style={({ pressed }) => [styles.editAction, pressed && styles.pressed, editRequested && styles.disabled]}
+          >
+            <Text style={styles.editActionText}>
+              {editRequested ? 'Solicitação enviada' : featuredEditMode === 'direct' ? 'Editar publicação' : 'Solicitar edição'}
+            </Text>
+          </Pressable>
+        )}
 
         <View style={styles.foodImage} accessibilityLabel="Ilustração de uma refeição saudável">
           <View style={styles.plate}>
@@ -129,6 +156,9 @@ const styles = StyleSheet.create({
   author: { color: colors.text, fontSize: 14, fontWeight: '800' },
   authorMeta: { marginTop: 2, color: colors.muted, fontSize: 11 },
   postText: { paddingHorizontal: 16, paddingBottom: 14, color: colors.text, fontSize: 15, lineHeight: 21 },
+  editAction: { minHeight: 48, marginHorizontal: 16, marginBottom: 14, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: colors.primarySoft },
+  editActionText: { color: colors.primaryDark, fontSize: 12, fontWeight: '800' },
+  disabled: { opacity: 0.58 },
   blueHeart: { color: colors.primary },
   foodImage: { minHeight: 190, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, backgroundColor: '#E7F5E9' },
   plate: { width: 118, height: 118, alignItems: 'center', justifyContent: 'center', borderRadius: 60, backgroundColor: '#FFFFFF', borderWidth: 8, borderColor: '#D5EAD9', transform: [{ rotate: '-7deg' }] },
