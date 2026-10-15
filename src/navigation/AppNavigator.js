@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { BackHandler, SafeAreaView, StyleSheet, View } from 'react-native';
 import BottomNavigation from '../components/BottomNavigation';
+import AgendaScreen from '../screens/AgendaScreen';
 import CalculatorScreen from '../screens/CalculatorScreen';
 import HomeScreen from '../screens/HomeScreen';
 import LoginScreen from '../screens/LoginScreen';
@@ -29,9 +30,10 @@ export default function AppNavigator() {
   let content;
   if (screen === 'home') content = <HomeScreen onNavigate={setScreen} />;
   else if (screen === 'calculator') content = <CalculatorScreen />;
+  else if (screen === 'agenda') content = <AgendaScreen />;
   else content = (
     <PlaceholderScreen
-      title={{ agenda: 'Agenda', feed: 'Feed', profile: 'Perfil', activities: 'Atividades e Treinos', nutrition: 'Alimentação', notifications: 'Notificações' }[screen] || 'Em breve'}
+      title={{ feed: 'Feed', profile: 'Perfil', activities: 'Atividades e Treinos', nutrition: 'Alimentação', notifications: 'Notificações' }[screen] || 'Em breve'}
     />
   );
 

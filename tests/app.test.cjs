@@ -182,6 +182,7 @@ test('fluxo Login → Início → Calculadora calcula IMC; voltar retorna ao in�
   const navigator = renderComponent('src/navigation/AppNavigator.js', {
     imports: {
       '../components/BottomNavigation': 'BottomNavigation',
+      '../screens/AgendaScreen': 'AgendaScreen',
       '../screens/LoginScreen': 'LoginScreen',
       '../screens/HomeScreen': 'HomeScreen',
       '../screens/CalculatorScreen': 'CalculatorScreen',
@@ -208,6 +209,8 @@ test('fluxo Login → Início → Calculadora calcula IMC; voltar retorna ao in�
   assert.equal([...listeners][0](), true);
   assert.equal(nodes(navigator.render(), node => node.type === 'HomeScreen').length, 1);
   assert.equal(listeners.size, 1);
+  nodes(navigator.render(), node => node.type === 'BottomNavigation')[0].props.onNavigate('agenda');
+  assert.equal(nodes(navigator.render(), node => node.type === 'AgendaScreen').length, 1);
   navigator.unmount();
   assert.equal(listeners.size, 0);
 });
