@@ -12,6 +12,9 @@ const glyphs = {
   bell: '♢',
   plus: '+',
   arrow: '›',
+  heart: '♡',
+  comment: '○',
+  bookmark: '◇',
 };
 
 export default function AppIcon({ name, active = false, size = 22 }) {

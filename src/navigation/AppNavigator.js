@@ -3,6 +3,7 @@ import { BackHandler, SafeAreaView, StyleSheet, View } from 'react-native';
 import BottomNavigation from '../components/BottomNavigation';
 import AgendaScreen from '../screens/AgendaScreen';
 import CalculatorScreen from '../screens/CalculatorScreen';
+import FeedScreen from '../screens/FeedScreen';
 import HomeScreen from '../screens/HomeScreen';
 import LoginScreen from '../screens/LoginScreen';
 import PlaceholderScreen from '../screens/PlaceholderScreen';
@@ -31,9 +32,10 @@ export default function AppNavigator() {
   if (screen === 'home') content = <HomeScreen onNavigate={setScreen} />;
   else if (screen === 'calculator') content = <CalculatorScreen />;
   else if (screen === 'agenda') content = <AgendaScreen />;
+  else if (screen === 'feed') content = <FeedScreen />;
   else content = (
     <PlaceholderScreen
-      title={{ feed: 'Feed', profile: 'Perfil', activities: 'Atividades e Treinos', nutrition: 'Alimentação', notifications: 'Notificações' }[screen] || 'Em breve'}
+      title={{ profile: 'Perfil', activities: 'Atividades e Treinos', nutrition: 'Alimentação', notifications: 'Notificações' }[screen] || 'Em breve'}
     />
   );
 

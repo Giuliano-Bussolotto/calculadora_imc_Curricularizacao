@@ -186,6 +186,7 @@ test('fluxo Login → Início → Calculadora calcula IMC; voltar retorna ao in�
       '../screens/LoginScreen': 'LoginScreen',
       '../screens/HomeScreen': 'HomeScreen',
       '../screens/CalculatorScreen': 'CalculatorScreen',
+      '../screens/FeedScreen': 'FeedScreen',
       '../screens/PlaceholderScreen': 'PlaceholderScreen',
       '../theme': { colors: {} },
     },
@@ -211,6 +212,8 @@ test('fluxo Login → Início → Calculadora calcula IMC; voltar retorna ao in�
   assert.equal(listeners.size, 1);
   nodes(navigator.render(), node => node.type === 'BottomNavigation')[0].props.onNavigate('agenda');
   assert.equal(nodes(navigator.render(), node => node.type === 'AgendaScreen').length, 1);
+  nodes(navigator.render(), node => node.type === 'BottomNavigation')[0].props.onNavigate('feed');
+  assert.equal(nodes(navigator.render(), node => node.type === 'FeedScreen').length, 1);
   navigator.unmount();
   assert.equal(listeners.size, 0);
 });
