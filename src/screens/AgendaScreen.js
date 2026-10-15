@@ -1,6 +1,7 @@
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useState } from 'react';
 import AppIcon from '../components/AppIcon';
+import { visibleOwnedResources } from '../domain/access/privacy';
 import { colors, shadows } from '../theme';
 
 const monthNames = [
@@ -8,10 +9,10 @@ const monthNames = [
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
 ];
 const weekDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-const appointments = [
-  { type: 'Nutrição', professional: 'Dra. Juliana', time: '09:00 – 09:30', icon: 'nutrition' },
-  { type: 'Pilates', professional: 'Prof. Ana', time: '10:00 – 11:00', icon: 'activity' },
-  { type: 'Psicologia', professional: 'Dra. Carla', time: '14:00 – 15:00', icon: 'profile' },
+const demoAppointments = [
+  { id: 'appointment-1', ownerId: 'patient-ana', type: 'appointment', specialty: 'Nutrição', professional: 'Dra. Juliana', time: '09:00 – 09:30', icon: 'nutrition' },
+  { id: 'appointment-2', ownerId: 'patient-ana', type: 'appointment', specialty: 'Pilates', professional: 'Prof. Ana', time: '10:00 – 11:00', icon: 'activity' },
+  { id: 'appointment-3', ownerId: 'patient-ana', type: 'appointment', specialty: 'Psicologia', professional: 'Dra. Carla', time: '14:00 – 15:00', icon: 'profile' },
 ];
 
 function calendarDays(year, month) {
@@ -23,13 +24,14 @@ function calendarDays(year, month) {
   ];
 }
 
-export default function AgendaScreen() {
+export default function AgendaScreen({ currentUser = { id: 'patient-ana', role: 'patient' }, appointments = demoAppointments }) {
   const today = new Date();
   const [visibleMonth, setVisibleMonth] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
   const [selectedDay, setSelectedDay] = useState(today.getDate());
   const year = visibleMonth.getFullYear();
   const month = visibleMonth.getMonth();
   const days = calendarDays(year, month);
+  const visibleAppointments = visibleOwnedResources(currentUser, appointments);
 
   function changeMonth(offset) {
     const next = new Date(year, month + offset, 1);
@@ -97,22 +99,28 @@ export default function AgendaScreen() {
 
       <Text style={styles.selectedTitle}>{selectedDay} de {monthNames[month]}</Text>
       <View style={styles.appointments}>
-        {appointments.map(item => (
+        {visibleAppointments.map(item => (
           <Pressable
-            key={item.type}
+            key={item.id}
             accessibilityRole="button"
-            accessibilityLabel={`${item.type}, ${item.professional}, ${item.time}`}
+            accessibilityLabel={`${item.specialty}, ${item.professional}, ${item.time}`}
             style={({ pressed }) => [styles.appointment, pressed && styles.pressed]}
           >
             <View style={styles.appointmentIcon}><AppIcon name={item.icon} active size={20} /></View>
             <View style={styles.appointmentText}>
-              <Text style={styles.appointmentType}>{item.type}</Text>
+              <Text style={styles.appointmentType}>{item.specialty}</Text>
               <Text style={styles.professional}>{item.professional}</Text>
               <Text style={styles.time}>{item.time}</Text>
             </View>
             <AppIcon name="arrow" size={25} />
           </Pressable>
         ))}
+        {visibleAppointments.length === 0 && (
+          <View style={styles.emptyState} accessibilityLiveRegion="polite">
+            <Text style={styles.emptyTitle}>Nenhum compromisso na sua agenda</Text>
+            <Text style={styles.emptyText}>Por privacidade, somente seus próprios horários são exibidos.</Text>
+          </View>
+        )}
       </View>
     </ScrollView>
   );
@@ -141,6 +149,9 @@ const styles = StyleSheet.create({
   selectedDayText: { color: '#FFFFFF', fontWeight: '800' },
   selectedTitle: { marginTop: 24, marginBottom: 12, color: colors.text, fontSize: 19, fontWeight: '800' },
   appointments: { gap: 10 },
+  emptyState: { padding: 20, borderRadius: 18, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
+  emptyTitle: { color: colors.text, fontSize: 14, fontWeight: '800' },
+  emptyText: { marginTop: 5, color: colors.muted, fontSize: 12, lineHeight: 18 },
   appointment: { minHeight: 82, flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: 18, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
   appointmentIcon: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: colors.primarySoft },
   appointmentText: { flex: 1, marginLeft: 12 },

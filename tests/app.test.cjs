@@ -145,6 +145,25 @@ test('Psicóloga acessa somente solicitações de edição e menções', () => {
   assert.equal(canAccessModule('psychologist', 'agenda'), false);
   assert.equal(permissionsFor('psychologist').canViewPersonalData, false);
 });
+
+test('dados pessoais e agendas ficam visíveis apenas ao proprietário ou Supervisor/Diretor', () => {
+  const { canViewOwnedResource, visibleOwnedResources } = require('../src/domain/access/privacy');
+  const ana = { id: 'patient-ana', role: 'patient' };
+  const doctor = { id: 'doctor-1', role: 'doctor' };
+  const admin = { id: 'admin-1', role: 'supervisor' };
+  const resources = [
+    { id: 'a', type: 'appointment', ownerId: 'patient-ana' },
+    { id: 'b', type: 'notification', ownerId: 'doctor-1' },
+    { id: 'c', type: 'history', ownerId: 'patient-bia' },
+  ];
+
+  assert.equal(canViewOwnedResource(ana, resources[0]), true);
+  assert.equal(canViewOwnedResource(doctor, resources[0]), false);
+  assert.deepEqual(visibleOwnedResources(ana, resources).map(item => item.id), ['a']);
+  assert.deepEqual(visibleOwnedResources(doctor, resources).map(item => item.id), ['b']);
+  assert.deepEqual(visibleOwnedResources(admin, resources).map(item => item.id), ['a', 'b', 'c']);
+  assert.equal(canViewOwnedResource(ana, { type: 'unknown', ownerId: ana.id }), false);
+});
 function calculate(component, weight, height, { birthDate = '20/09/1996', sex = 'male' } = {}) {
   const tree = component.render();
   const fields = nodes(tree, node => node.type === 'TextInput');
