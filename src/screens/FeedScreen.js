@@ -1,14 +1,27 @@
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useState } from 'react';
 import AppIcon from '../components/AppIcon';
+import { editMode } from '../domain/feed/postPermissions';
 import { colors, shadows } from '../theme';
 
 const filters = ['Todos', 'Nutrição', 'Pilates', 'Saúde Mental'];
 
-export default function FeedScreen() {
+const featuredPost = {
+  id: 'post-nutrition-1',
+  authorId: 'nutritionist-juliana',
+  authorRole: 'nutritionist',
+  mentionedUserIds: [],
+};
+
+export default function FeedScreen({ currentUser = { id: 'patient-ana', role: 'patient' } }) {
   const [activeFilter, setActiveFilter] = useState('Todos');
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [editRequested, setEditRequested] = useState(false);
+  const [myPostText, setMyPostText] = useState('Hoje completei minha caminhada e cuidei um pouco mais de mim.');
+  const [draft, setDraft] = useState(myPostText);
+  const [editingMyPost, setEditingMyPost] = useState(false);
+  const featuredEditMode = editMode(currentUser, featuredPost);
 
   function createPost() {
     Alert.alert('Nova publicação', 'A criação de publicações será habilitada conforme as permissões do perfil profissional.');
@@ -59,6 +72,23 @@ export default function FeedScreen() {
           Uma alimentação equilibrada é a base para mais energia e qualidade de vida. <Text style={styles.blueHeart}>♥</Text>
         </Text>
 
+        {featuredEditMode !== 'none' && (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={featuredEditMode === 'direct' ? 'Editar publicação' : 'Solicitar edição da publicação'}
+            disabled={editRequested}
+            onPress={() => {
+              if (featuredEditMode === 'direct') Alert.alert('Editar publicação', 'A edição será salva localmente até a integração com o backend.');
+              else setEditRequested(true);
+            }}
+            style={({ pressed }) => [styles.editAction, pressed && styles.pressed, editRequested && styles.disabled]}
+          >
+            <Text style={styles.editActionText}>
+              {editRequested ? 'Solicitação enviada' : featuredEditMode === 'direct' ? 'Editar publicação' : 'Solicitar edição'}
+            </Text>
+          </Pressable>
+        )}
+
         <View style={styles.foodImage} accessibilityLabel="Ilustração de uma refeição saudável">
           <View style={styles.plate}>
             <Text style={styles.foodEmoji}>🥗</Text>
@@ -81,10 +111,6 @@ export default function FeedScreen() {
               <Text style={[styles.actionHeart, liked && styles.liked]}>{liked ? '♥' : '♡'}</Text>
               <Text style={styles.count}>{liked ? 13 : 12}</Text>
             </Pressable>
-            <Pressable accessibilityRole="button" accessibilityLabel="Ver comentários" style={styles.actionButton}>
-              <AppIcon name="comment" size={20} />
-              <Text style={styles.count}>3</Text>
-            </Pressable>
           </View>
           <Pressable
             accessibilityRole="button"
@@ -106,6 +132,61 @@ export default function FeedScreen() {
           <Text style={styles.compactText}>Movimento consciente também é uma forma de autocuidado.</Text>
         </View>
       </View>
+
+      {currentUser.role === 'patient' && (
+        <View style={styles.myPost} accessibilityLabel="Minha publicação">
+          <View style={styles.authorRowCompact}>
+            <View style={styles.avatarPatient}><Text style={styles.avatarText}>A</Text></View>
+            <View style={styles.compactContent}>
+              <Text style={styles.author}>Ana</Text>
+              <Text style={styles.authorMeta}>Minha publicação · hoje</Text>
+            </View>
+          </View>
+
+          {editingMyPost ? (
+            <TextInput
+              accessibilityLabel="Texto da minha publicação"
+              value={draft}
+              onChangeText={setDraft}
+              multiline
+              style={styles.postInput}
+            />
+          ) : <Text style={styles.compactText}>{myPostText}</Text>}
+
+          <View style={styles.myPostActions}>
+            {editingMyPost ? (
+              <>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Cancelar edição da minha publicação"
+                  onPress={() => { setDraft(myPostText); setEditingMyPost(false); }}
+                  style={styles.secondaryButton}
+                >
+                  <Text style={styles.secondaryButtonText}>Cancelar</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Salvar minha publicação"
+                  disabled={!draft.trim()}
+                  onPress={() => { setMyPostText(draft.trim()); setEditingMyPost(false); }}
+                  style={[styles.saveButton, !draft.trim() && styles.disabled]}
+                >
+                  <Text style={styles.saveButtonText}>Salvar</Text>
+                </Pressable>
+              </>
+            ) : (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Editar minha publicação"
+                onPress={() => setEditingMyPost(true)}
+                style={styles.secondaryButton}
+              >
+                <Text style={styles.secondaryButtonText}>Editar minha publicação</Text>
+              </Pressable>
+            )}
+          </View>
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -124,11 +205,15 @@ const styles = StyleSheet.create({
   authorRow: { flexDirection: 'row', alignItems: 'center', padding: 16, paddingBottom: 12 },
   avatar: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 22, backgroundColor: '#F8D8BA' },
   avatarPilates: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 22, backgroundColor: '#D8E8FC' },
+  avatarPatient: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 22, backgroundColor: '#DDF1DF' },
   avatarText: { color: colors.text, fontSize: 17, fontWeight: '900' },
   authorText: { marginLeft: 11 },
   author: { color: colors.text, fontSize: 14, fontWeight: '800' },
   authorMeta: { marginTop: 2, color: colors.muted, fontSize: 11 },
   postText: { paddingHorizontal: 16, paddingBottom: 14, color: colors.text, fontSize: 15, lineHeight: 21 },
+  editAction: { minHeight: 48, marginHorizontal: 16, marginBottom: 14, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: colors.primarySoft },
+  editActionText: { color: colors.primaryDark, fontSize: 12, fontWeight: '800' },
+  disabled: { opacity: 0.58 },
   blueHeart: { color: colors.primary },
   foodImage: { minHeight: 190, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, backgroundColor: '#E7F5E9' },
   plate: { width: 118, height: 118, alignItems: 'center', justifyContent: 'center', borderRadius: 60, backgroundColor: '#FFFFFF', borderWidth: 8, borderColor: '#D5EAD9', transform: [{ rotate: '-7deg' }] },
@@ -145,7 +230,15 @@ const styles = StyleSheet.create({
   bookmark: { color: colors.muted, fontSize: 24 },
   saved: { color: colors.primary },
   postCompact: { marginTop: 14, flexDirection: 'row', padding: 16, borderRadius: 20, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
+  myPost: { marginTop: 14, padding: 16, borderRadius: 20, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
+  authorRowCompact: { flexDirection: 'row', alignItems: 'center' },
   compactContent: { flex: 1, marginLeft: 11 },
   compactText: { marginTop: 10, color: colors.text, fontSize: 14, lineHeight: 20 },
+  postInput: { minHeight: 90, marginTop: 13, padding: 12, borderRadius: 14, borderWidth: 1, borderColor: colors.primary, color: colors.text, fontSize: 14, textAlignVertical: 'top' },
+  myPostActions: { marginTop: 13, flexDirection: 'row', justifyContent: 'flex-end', gap: 8 },
+  secondaryButton: { minHeight: 48, paddingHorizontal: 14, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: colors.primarySoft },
+  secondaryButtonText: { color: colors.primaryDark, fontSize: 12, fontWeight: '800' },
+  saveButton: { minHeight: 48, minWidth: 92, paddingHorizontal: 14, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: colors.primary },
+  saveButtonText: { color: '#FFFFFF', fontSize: 12, fontWeight: '800' },
   pressed: { opacity: 0.7 },
 });

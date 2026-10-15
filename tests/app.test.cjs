@@ -109,6 +109,147 @@ function calculator() {
     },
   });
 }
+
+test('cargos da clínica ficam centralizados e permitem abrir o fluxo de nova função', () => {
+  const { roles, getRole } = require('../src/domain/access/roles');
+  assert.deepEqual(roles.map(role => role.id), [
+    'supervisor', 'doctor', 'nutritionist', 'pilates_teacher', 'psychologist', 'patient', 'public',
+  ]);
+  assert.equal(getRole('doctor').name, 'Médico');
+  assert.equal(getRole('unknown'), null);
+
+  let notice;
+  const component = renderComponent('src/screens/RolesScreen.js', {
+    imports: {
+      '../components/AppIcon': 'AppIcon',
+      '../domain/access/roles': { roles },
+      '../theme': { colors: {}, shadows: { card: {} } },
+    },
+    native: { Alert: { alert(...args) { notice = args; } } },
+  });
+  let selected;
+  const tree = component.render({ onBack() {}, onSelectRole(roleId) { selected = roleId; } });
+  assert.equal(nodes(tree, node => /^Ver permissões de /.test(node.props?.accessibilityLabel || '')).length, roles.length);
+  byLabel(tree, 'Ver permissões de Psicóloga').props.onPress();
+  assert.equal(selected, 'psychologist');
+  byLabel(tree, 'Criar nova função').props.onPress();
+  assert.equal(notice[0], 'Criar nova função');
+  assert.match(notice[1], /backend/);
+});
+
+test('Psicóloga acessa somente solicitações de edição e menções', () => {
+  const { canAccessModule, permissionsFor } = require('../src/domain/access/permissions');
+  assert.deepEqual(permissionsFor('psychologist').modules, ['edit_requests', 'mentions']);
+  assert.equal(canAccessModule('psychologist', 'edit_requests'), true);
+  assert.equal(canAccessModule('psychologist', 'mentions'), true);
+  assert.equal(canAccessModule('psychologist', 'agenda'), false);
+  assert.equal(permissionsFor('psychologist').canViewPersonalData, false);
+});
+
+test('dados pessoais e agendas ficam visíveis apenas ao proprietário ou Supervisor/Diretor', () => {
+  const { canViewOwnedResource, visibleOwnedResources } = require('../src/domain/access/privacy');
+  const ana = { id: 'patient-ana', role: 'patient' };
+  const doctor = { id: 'doctor-1', role: 'doctor' };
+  const admin = { id: 'admin-1', role: 'supervisor' };
+  const resources = [
+    { id: 'a', type: 'appointment', ownerId: 'patient-ana' },
+    { id: 'b', type: 'notification', ownerId: 'doctor-1' },
+    { id: 'c', type: 'history', ownerId: 'patient-bia' },
+  ];
+
+  assert.equal(canViewOwnedResource(ana, resources[0]), true);
+  assert.equal(canViewOwnedResource(doctor, resources[0]), false);
+  assert.deepEqual(visibleOwnedResources(ana, resources).map(item => item.id), ['a']);
+  assert.deepEqual(visibleOwnedResources(doctor, resources).map(item => item.id), ['b']);
+  assert.deepEqual(visibleOwnedResources(admin, resources).map(item => item.id), ['a', 'b', 'c']);
+  assert.equal(canViewOwnedResource(ana, { type: 'unknown', ownerId: ana.id }), false);
+});
+
+test('edição de publicações respeita autoria, menção e solicitação profissional', () => {
+  const { editMode, canEditPost, canRequestPostEdit } = require('../src/domain/feed/postPermissions');
+  const post = { authorId: 'nutritionist-1', mentionedUserIds: ['doctor-mentioned'] };
+  const author = { id: 'nutritionist-1', role: 'nutritionist' };
+  const mentionedDoctor = { id: 'doctor-mentioned', role: 'doctor' };
+  const otherDoctor = { id: 'doctor-other', role: 'doctor' };
+  const patient = { id: 'patient-1', role: 'patient' };
+
+  assert.equal(editMode(author, post), 'direct');
+  assert.equal(canEditPost(mentionedDoctor, post), true);
+  assert.equal(canRequestPostEdit(otherDoctor, post), true);
+  assert.equal(editMode(patient, post), 'none');
+  assert.equal(canEditPost(patient, post), false);
+});
+
+test('botão de solicitação de edição confirma o envio e evita repetição', () => {
+  const component = renderComponent('src/screens/FeedScreen.js', {
+    imports: {
+      '../components/AppIcon': 'AppIcon',
+      '../domain/feed/postPermissions': require('../src/domain/feed/postPermissions'),
+      '../theme': { colors: {}, shadows: { card: {} } },
+    },
+  });
+  const props = { currentUser: { id: 'doctor-other', role: 'doctor' } };
+  const button = byLabel(component.render(props), 'Solicitar edição da publicação');
+  assert.equal(button.props.disabled, false);
+  button.props.onPress();
+  const sent = byLabel(component.render(props), 'Solicitar edição da publicação');
+  assert.equal(sent.props.disabled, true);
+  assert.equal(nodes(sent, node => node.type === 'Text')[0].props.children, 'Solicitação enviada');
+});
+
+test('Paciente edita somente a própria publicação e não salva conteúdo vazio', () => {
+  const component = renderComponent('src/screens/FeedScreen.js', {
+    imports: {
+      '../components/AppIcon': 'AppIcon',
+      '../domain/feed/postPermissions': require('../src/domain/feed/postPermissions'),
+      '../theme': { colors: {}, shadows: { card: {} } },
+    },
+  });
+  const props = { currentUser: { id: 'patient-ana', role: 'patient' } };
+  let tree = component.render(props);
+  assert.equal(nodes(tree, node => /edição da publicação/.test(node.props?.accessibilityLabel || '')).length, 0);
+  byLabel(tree, 'Editar minha publicação').props.onPress();
+  tree = component.render(props);
+  const field = byLabel(tree, 'Texto da minha publicação');
+  field.props.onChangeText('  Minha evolução desta semana.  ');
+  byLabel(component.render(props), 'Salvar minha publicação').props.onPress();
+  tree = component.render(props);
+  assert.equal(nodes(tree, node => node.type === 'Text' && node.props.children === 'Minha evolução desta semana.').length, 1);
+
+  byLabel(tree, 'Editar minha publicação').props.onPress();
+  byLabel(component.render(props), 'Texto da minha publicação').props.onChangeText('   ');
+  assert.equal(byLabel(component.render(props), 'Salvar minha publicação').props.disabled, true);
+});
+
+test('Feed não oferece comentários no escopo atual do produto', () => {
+  const component = renderComponent('src/screens/FeedScreen.js', {
+    imports: {
+      '../components/AppIcon': 'AppIcon',
+      '../domain/feed/postPermissions': require('../src/domain/feed/postPermissions'),
+      '../theme': { colors: {}, shadows: { card: {} } },
+    },
+  });
+  const tree = component.render({ currentUser: { id: 'patient-ana', role: 'patient' } });
+  assert.equal(nodes(tree, node => /coment/i.test(node.props?.accessibilityLabel || '')).length, 0);
+});
+
+test('notificações incluem consulta automática e preferências essenciais funcionais', () => {
+  const component = renderComponent('src/screens/NotificationsScreen.js', {
+    imports: {
+      '../components/AppIcon': 'AppIcon',
+      '../theme': { colors: {}, shadows: { card: {} } },
+    },
+  });
+  let tree = component.render();
+  assert.equal(byLabel(tree, 'Lembrete automático de consulta ativo').type, 'View');
+  assert.equal(byLabel(tree, 'Lembrete de Hidratação').props.accessibilityState.checked, true);
+  assert.equal(byLabel(tree, 'Lembrete de Caminhadas').props.accessibilityState.checked, false);
+  assert.equal(byLabel(tree, 'Lembrete de Exercícios').props.accessibilityState.checked, true);
+
+  byLabel(tree, 'Lembrete de Caminhadas').props.onPress();
+  tree = component.render();
+  assert.equal(byLabel(tree, 'Lembrete de Caminhadas').props.accessibilityState.checked, true);
+});
 function calculate(component, weight, height, { birthDate = '20/09/1996', sex = 'male' } = {}) {
   const tree = component.render();
   const fields = nodes(tree, node => node.type === 'TextInput');
@@ -187,10 +328,13 @@ test('fluxo Login → Início → Calculadora calcula IMC; voltar retorna ao in�
       '../components/BottomNavigation': 'BottomNavigation',
       '../screens/AgendaScreen': 'AgendaScreen',
       '../screens/LoginScreen': 'LoginScreen',
+      '../screens/NotificationsScreen': 'NotificationsScreen',
       '../screens/HomeScreen': 'HomeScreen',
       '../screens/CalculatorScreen': 'CalculatorScreen',
       '../screens/FeedScreen': 'FeedScreen',
       '../screens/PlaceholderScreen': 'PlaceholderScreen',
+      '../screens/PermissionsScreen': 'PermissionsScreen',
+      '../screens/RolesScreen': 'RolesScreen',
       '../theme': { colors: {} },
     },
     native: { BackHandler: { addEventListener(event, handler) {
@@ -289,6 +433,16 @@ test('criança tem idade, IMC e classificação WHO 2007 sem mostrar o Z técnic
   assert.match(result, /Classificação IMC por idade/);
   assert.match(result, /WHO 2007/);
   assert.doesNotMatch(result, /Escore|Z-score/);
+});
+
+test('resultado reserva um card vazio para futura mensagem com IA', () => {
+  const component = calculator();
+  const label = 'Espaço reservado para futura mensagem com inteligência artificial';
+  assert.equal(nodes(component.render(), node => node.props?.accessibilityLabel === label).length, 0);
+  calculate(component, '70', '175');
+  const card = byLabel(component.render(), label);
+  assert.equal(card.type, 'View');
+  assert.equal(card.props.children, undefined);
 });
 
 for (const [birthDate, message] of [

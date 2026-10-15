@@ -193,20 +193,27 @@ export default function CalculatorScreen() {
           </Pressable>
 
           {evaluationSummary ? (
-            <View style={styles.resultCard}>
-              <Text style={styles.resultEyebrow}>Seu IMC é</Text>
-              <Text style={styles.bmiValue}>{evaluationSummary.bmi.toFixed(1).replace('.', ',')}</Text>
-              <View style={styles.classificationBadge}>
-                <Text style={styles.classificationText}>{evaluationSummary.classification || 'Revisão recomendada'}</Text>
+            <>
+              <View style={styles.resultCard}>
+                <Text style={styles.resultEyebrow}>Seu IMC é</Text>
+                <Text style={styles.bmiValue}>{evaluationSummary.bmi.toFixed(1).replace('.', ',')}</Text>
+                <View style={styles.classificationBadge}>
+                  <Text style={styles.classificationText}>{evaluationSummary.classification || 'Revisão recomendada'}</Text>
+                </View>
+                <View style={styles.scale}>
+                  <View style={[styles.scalePart, { backgroundColor: '#22B573' }]} />
+                  <View style={[styles.scalePart, { backgroundColor: '#F4C84A' }]} />
+                  <View style={[styles.scalePart, { backgroundColor: '#F08A3C' }]} />
+                  <View style={[styles.scalePart, { backgroundColor: '#E94D5F' }]} />
+                </View>
+                <Text style={styles.result} accessibilityLiveRegion="polite">{resultado}</Text>
               </View>
-              <View style={styles.scale}>
-                <View style={[styles.scalePart, { backgroundColor: '#22B573' }]} />
-                <View style={[styles.scalePart, { backgroundColor: '#F4C84A' }]} />
-                <View style={[styles.scalePart, { backgroundColor: '#F08A3C' }]} />
-                <View style={[styles.scalePart, { backgroundColor: '#E94D5F' }]} />
-              </View>
-              <Text style={styles.result} accessibilityLiveRegion="polite">{resultado}</Text>
-            </View>
+              <View
+                accessible
+                accessibilityLabel="Espaço reservado para futura mensagem com inteligência artificial"
+                style={styles.aiMessageCard}
+              />
+            </>
           ) : (
             <View style={styles.messageCard}>
               <Text style={styles.result} accessibilityLiveRegion="polite">{resultado}</Text>
@@ -247,6 +254,7 @@ const styles = StyleSheet.create({
   clearText: { color: colors.primary, fontSize: 13, fontWeight: '700' },
   messageCard: { marginTop: 4, padding: 16, borderRadius: 16, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
   resultCard: { marginTop: 8, padding: 20, alignItems: 'center', borderRadius: 22, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, ...shadows.card },
+  aiMessageCard: { width: '100%', minHeight: 128, marginTop: 14, borderRadius: 22, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, ...shadows.card },
   resultEyebrow: { color: colors.muted, fontSize: 12, fontWeight: '700' },
   bmiValue: { marginTop: 2, color: colors.text, fontSize: 48, lineHeight: 54, fontWeight: '900' },
   classificationBadge: { marginTop: 4, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 18, backgroundColor: '#E2F6E8' },
