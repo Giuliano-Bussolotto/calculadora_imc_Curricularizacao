@@ -220,6 +220,18 @@ test('Paciente edita somente a própria publicação e não salva conteúdo vazi
   byLabel(component.render(props), 'Texto da minha publicação').props.onChangeText('   ');
   assert.equal(byLabel(component.render(props), 'Salvar minha publicação').props.disabled, true);
 });
+
+test('Feed não oferece comentários no escopo atual do produto', () => {
+  const component = renderComponent('src/screens/FeedScreen.js', {
+    imports: {
+      '../components/AppIcon': 'AppIcon',
+      '../domain/feed/postPermissions': require('../src/domain/feed/postPermissions'),
+      '../theme': { colors: {}, shadows: { card: {} } },
+    },
+  });
+  const tree = component.render({ currentUser: { id: 'patient-ana', role: 'patient' } });
+  assert.equal(nodes(tree, node => /coment/i.test(node.props?.accessibilityLabel || '')).length, 0);
+});
 function calculate(component, weight, height, { birthDate = '20/09/1996', sex = 'male' } = {}) {
   const tree = component.render();
   const fields = nodes(tree, node => node.type === 'TextInput');

@@ -111,10 +111,6 @@ export default function FeedScreen({ currentUser = { id: 'patient-ana', role: 'p
               <Text style={[styles.actionHeart, liked && styles.liked]}>{liked ? '♥' : '♡'}</Text>
               <Text style={styles.count}>{liked ? 13 : 12}</Text>
             </Pressable>
-            <Pressable accessibilityRole="button" accessibilityLabel="Ver comentários" style={styles.actionButton}>
-              <AppIcon name="comment" size={20} />
-              <Text style={styles.count}>3</Text>
-            </Pressable>
           </View>
           <Pressable
             accessibilityRole="button"
