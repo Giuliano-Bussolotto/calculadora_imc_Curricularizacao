@@ -127,11 +127,23 @@ test('cargos da clínica ficam centralizados e permitem abrir o fluxo de nova fu
     },
     native: { Alert: { alert(...args) { notice = args; } } },
   });
-  const tree = component.render({ onBack() {} });
-  assert.equal(nodes(tree, node => /^Cargo /.test(node.props?.accessibilityLabel || '')).length, roles.length);
+  let selected;
+  const tree = component.render({ onBack() {}, onSelectRole(roleId) { selected = roleId; } });
+  assert.equal(nodes(tree, node => /^Ver permissões de /.test(node.props?.accessibilityLabel || '')).length, roles.length);
+  byLabel(tree, 'Ver permissões de Psicóloga').props.onPress();
+  assert.equal(selected, 'psychologist');
   byLabel(tree, 'Criar nova função').props.onPress();
   assert.equal(notice[0], 'Criar nova função');
   assert.match(notice[1], /backend/);
+});
+
+test('Psicóloga acessa somente solicitações de edição e menções', () => {
+  const { canAccessModule, permissionsFor } = require('../src/domain/access/permissions');
+  assert.deepEqual(permissionsFor('psychologist').modules, ['edit_requests', 'mentions']);
+  assert.equal(canAccessModule('psychologist', 'edit_requests'), true);
+  assert.equal(canAccessModule('psychologist', 'mentions'), true);
+  assert.equal(canAccessModule('psychologist', 'agenda'), false);
+  assert.equal(permissionsFor('psychologist').canViewPersonalData, false);
 });
 function calculate(component, weight, height, { birthDate = '20/09/1996', sex = 'male' } = {}) {
   const tree = component.render();
@@ -215,6 +227,7 @@ test('fluxo Login → Início → Calculadora calcula IMC; voltar retorna ao in�
       '../screens/CalculatorScreen': 'CalculatorScreen',
       '../screens/FeedScreen': 'FeedScreen',
       '../screens/PlaceholderScreen': 'PlaceholderScreen',
+      '../screens/PermissionsScreen': 'PermissionsScreen',
       '../screens/RolesScreen': 'RolesScreen',
       '../theme': { colors: {} },
     },

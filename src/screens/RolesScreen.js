@@ -3,7 +3,7 @@ import AppIcon from '../components/AppIcon';
 import { roles } from '../domain/access/roles';
 import { colors, shadows } from '../theme';
 
-export default function RolesScreen({ onBack }) {
+export default function RolesScreen({ onBack, onSelectRole }) {
   function createRole() {
     Alert.alert(
       'Criar nova função',
@@ -32,14 +32,20 @@ export default function RolesScreen({ onBack }) {
 
       <View style={styles.list}>
         {roles.map(role => (
-          <View key={role.id} style={styles.roleCard} accessibilityLabel={`Cargo ${role.name}`}>
+          <Pressable
+            key={role.id}
+            accessibilityRole="button"
+            accessibilityLabel={`Ver permissões de ${role.name}`}
+            onPress={() => onSelectRole(role.id)}
+            style={({ pressed }) => [styles.roleCard, pressed && styles.pressed]}
+          >
             <View style={styles.roleIcon}><AppIcon name="profile" active size={18} /></View>
             <View style={styles.roleCopy}>
               <Text style={styles.roleName}>{role.name}</Text>
               <Text style={styles.roleDescription}>{role.description}</Text>
             </View>
             <View style={styles.status}><Text style={styles.statusText}>Ativo</Text></View>
-          </View>
+          </Pressable>
         ))}
       </View>
 
