@@ -113,7 +113,7 @@ function calculator() {
 test('cargos da clínica ficam centralizados e permitem abrir o fluxo de nova função', () => {
   const { roles, getRole } = require('../src/domain/access/roles');
   assert.deepEqual(roles.map(role => role.id), [
-    'supervisor', 'doctor', 'nutritionist', 'pilates_teacher', 'psychologist', 'patient', 'public',
+    'admin', 'supervisor', 'doctor', 'nutritionist', 'pilates_teacher', 'psychologist', 'patient', 'public',
   ]);
   assert.equal(getRole('doctor').name, 'Médico');
   assert.equal(getRole('unknown'), null);
@@ -138,13 +138,14 @@ test('cargos da clínica ficam centralizados e permitem abrir o fluxo de nova fu
   assert.match(notice[1], /backend/);
 });
 
-test('somente Yenny e Yohgenson podem criar Supervisor ou Diretor', () => {
+test('somente o ADM Giuliano pode atribuir cargo de Supervisor ou Diretor', () => {
   const { CURRENT_SUPERVISOR_CREATORS, canCreateSupervisor } = require('../src/domain/access/supervisorCreation');
-  assert.deepEqual(CURRENT_SUPERVISOR_CREATORS.map(user => user.name), ['Yenny', 'Yohgenson']);
-  assert.equal(canCreateSupervisor({ id: 'supervisor-yenny', role: 'supervisor' }), true);
-  assert.equal(canCreateSupervisor({ id: 'supervisor-yohgenson', role: 'supervisor' }), true);
+  assert.deepEqual(CURRENT_SUPERVISOR_CREATORS.map(user => user.name), ['Giuliano']);
+  assert.equal(canCreateSupervisor({ id: 'admin-giuliano', role: 'admin' }), true);
+  assert.equal(canCreateSupervisor({ id: 'supervisor-yenny', role: 'supervisor' }), false);
+  assert.equal(canCreateSupervisor({ id: 'supervisor-yohgenson', role: 'supervisor' }), false);
   assert.equal(canCreateSupervisor({ id: 'supervisor-new', role: 'supervisor' }), false);
-  assert.equal(canCreateSupervisor({ id: 'supervisor-yenny', role: 'doctor' }), false);
+  assert.equal(canCreateSupervisor({ id: 'admin-giuliano', role: 'doctor' }), false);
 
   let notice;
   const { roles } = require('../src/domain/access/roles');
@@ -157,7 +158,7 @@ test('somente Yenny e Yohgenson podem criar Supervisor ou Diretor', () => {
     },
     native: { Alert: { alert(...args) { notice = args; } } },
   });
-  const authorized = component.render({ onBack() {}, onSelectRole() {}, currentUser: { id: 'supervisor-yenny', role: 'supervisor' } });
+  const authorized = component.render({ onBack() {}, onSelectRole() {}, currentUser: { id: 'admin-giuliano', role: 'admin' } });
   byLabel(authorized, 'Criar novo Supervisor ou Diretor').props.onPress();
   assert.equal(notice[0], 'Novo Supervisor/Diretor');
 

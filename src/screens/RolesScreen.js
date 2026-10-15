@@ -4,7 +4,7 @@ import { roles } from '../domain/access/roles';
 import { canCreateSupervisor } from '../domain/access/supervisorCreation';
 import { colors, shadows } from '../theme';
 
-export default function RolesScreen({ onBack, onSelectRole, currentUser = { id: 'supervisor-yenny', role: 'supervisor' } }) {
+export default function RolesScreen({ onBack, onSelectRole, currentUser = { id: 'admin-giuliano', role: 'admin' } }) {
   function createRole() {
     Alert.alert(
       'Criar nova função',

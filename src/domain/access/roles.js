@@ -1,5 +1,11 @@
 const roles = [
   {
+    id: 'admin',
+    name: 'Administrador (ADM)',
+    description: 'Titular único autorizado a atribuir o cargo de ADM.',
+    status: 'active',
+  },
+  {
     id: 'supervisor',
     name: 'Supervisor/Diretor',
     description: 'Administração completa da clínica, equipe e permissões.',
