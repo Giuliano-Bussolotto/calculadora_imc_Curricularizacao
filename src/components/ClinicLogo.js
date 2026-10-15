@@ -1,43 +1,53 @@
 import { StyleSheet, Text, View } from 'react-native';
+import { colors } from '../theme';
 
-// Substitua este conteúdo pela imagem oficial quando ela estiver disponível.
 export default function ClinicLogo() {
   return (
     <View
-      style={styles.placeholder}
+      style={styles.container}
       accessible
-      accessibilityLabel="Espaço para a logo da clínica"
+      accessibilityLabel="Clínica Corpo e Saúde"
     >
-      <Text style={styles.symbol}>+</Text>
-      <Text style={styles.label}>Logo da clínica</Text>
+      <View style={styles.mark}><Text style={styles.symbol}>♡</Text><Text style={styles.plus}>+</Text></View>
+      <Text style={styles.label}>Clínica</Text>
+      <Text style={styles.name}>Corpo e Saúde</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  placeholder: {
-    alignSelf: 'flex-start',
-    minWidth: 148,
-    minHeight: 80,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
+  container: {
+    alignSelf: 'center',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: '#9BBAB1',
-    borderRadius: 16,
-    backgroundColor: '#EAF4F0',
-    marginBottom: 32,
+    marginBottom: 34,
+  },
+  mark: {
+    width: 72,
+    height: 62,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   symbol: {
-    color: '#196652',
-    fontSize: 28,
-    fontWeight: '500',
+    color: colors.primary,
+    fontSize: 68,
+    lineHeight: 72,
+    fontWeight: '700',
+    transform: [{ rotate: '-8deg' }],
+  },
+  plus: {
+    position: 'absolute',
+    right: 8,
+    top: 1,
+    color: colors.primary,
+    fontSize: 24,
+    fontWeight: '800',
   },
   label: {
-    color: '#3D655A',
-    fontSize: 12,
-    marginTop: 2,
+    color: colors.text,
+    fontSize: 21,
+    fontWeight: '700',
+    marginTop: 8,
   },
+  name: { color: colors.text, fontSize: 24, fontWeight: '900', lineHeight: 27 },
 });

@@ -33,7 +33,7 @@ function renderComponent(file, { imports = {}, native = {} } = {}) {
   };
   const reactNative = {
     ...Object.fromEntries([
-      'Button', 'KeyboardAvoidingView', 'Pressable', 'ScrollView', 'Text', 'TextInput', 'View',
+      'Button', 'KeyboardAvoidingView', 'Pressable', 'SafeAreaView', 'ScrollView', 'Text', 'TextInput', 'View',
     ].map(name => [name, name])),
     Platform: { OS: 'android' },
     StatusBar: Object.assign(function StatusBar() {}, { currentHeight: 24 }),
@@ -94,7 +94,10 @@ function input(tree) {
 }
 function login(options = {}) {
   return renderComponent('src/screens/LoginScreen.js', {
-    imports: { '../components/ClinicLogo': 'ClinicLogo' },
+    imports: {
+      '../components/ClinicLogo': 'ClinicLogo',
+      '../theme': { colors: {}, shadows: { card: {} } },
+    },
     ...options,
   });
 }
@@ -174,10 +177,17 @@ test('login permite rolagem, espaço para a barra Android e alvos de toque de 48
   }
 });
 
-test('fluxo Login → Calculadora calcula IMC; voltar do Android retorna ao login', () => {
+test('fluxo Login → Início → Calculadora calcula IMC; voltar retorna ao início', () => {
   const listeners = new Set();
   const navigator = renderComponent('src/navigation/AppNavigator.js', {
-    imports: { '../screens/LoginScreen': 'LoginScreen', '../screens/CalculatorScreen': 'CalculatorScreen' },
+    imports: {
+      '../components/BottomNavigation': 'BottomNavigation',
+      '../screens/LoginScreen': 'LoginScreen',
+      '../screens/HomeScreen': 'HomeScreen',
+      '../screens/CalculatorScreen': 'CalculatorScreen',
+      '../screens/PlaceholderScreen': 'PlaceholderScreen',
+      '../theme': { colors: {} },
+    },
     native: { BackHandler: { addEventListener(event, handler) {
       assert.equal(event, 'hardwareBackPress');
       listeners.add(handler);
@@ -188,14 +198,16 @@ test('fluxo Login → Calculadora calcula IMC; voltar do Android retorna ao logi
   assert.equal(initial.type, 'LoginScreen');
   assert.equal(listeners.size, 0);
   byLabel(login().render(initial.props), 'Continuar').props.onPress();
-  assert.equal(navigator.render().type, 'CalculatorScreen');
+  let shell = navigator.render();
+  assert.equal(nodes(shell, node => node.type === 'HomeScreen').length, 1);
   assert.equal(listeners.size, 1);
+  nodes(shell, node => node.type === 'BottomNavigation')[0].props.onNavigate('calculator');
+  shell = navigator.render();
+  assert.equal(nodes(shell, node => node.type === 'CalculatorScreen').length, 1);
   assert.equal(calculate(calculator(), '70', '175'), 'Idade: 30 anos e 0 meses\nIMC: 22,86\nClassificação (adultos): Peso adequado.');
   assert.equal([...listeners][0](), true);
-  assert.equal(navigator.render().type, 'LoginScreen');
-  assert.equal(listeners.size, 0);
-  navigator.render().props.onContinue();
-  navigator.render();
+  assert.equal(nodes(navigator.render(), node => node.type === 'HomeScreen').length, 1);
+  assert.equal(listeners.size, 1);
   navigator.unmount();
   assert.equal(listeners.size, 0);
 });

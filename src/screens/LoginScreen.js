@@ -13,6 +13,7 @@ import {
   View,
 } from 'react-native';
 import ClinicLogo from '../components/ClinicLogo';
+import { colors, shadows } from '../theme';
 
 export default function LoginScreen({ onContinue }) {
   const [accessMethod, setAccessMethod] = useState('phone');
@@ -131,7 +132,7 @@ export default function LoginScreen({ onContinue }) {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#F4F8F6',
+    backgroundColor: colors.background,
   },
   container: {
     flexGrow: 1,
@@ -146,34 +147,35 @@ const styles = StyleSheet.create({
     maxWidth: 440,
   },
   title: {
-    color: '#173B30',
+    color: colors.text,
     fontSize: 32,
     fontWeight: '700',
     lineHeight: 40,
     marginBottom: 10,
   },
   description: {
-    color: '#52675F',
+    color: colors.muted,
     fontSize: 16,
     lineHeight: 24,
     marginBottom: 28,
   },
   card: {
-    backgroundColor: '#FFFFFF',
-    borderColor: '#E0EAE5',
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
     borderWidth: 1,
     borderRadius: 20,
     padding: 20,
+    ...shadows.card,
   },
   sectionTitle: {
-    color: '#234A3D',
+    color: colors.text,
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 16,
   },
   methods: {
     flexDirection: 'row',
-    backgroundColor: '#EFF4F1',
+    backgroundColor: colors.primarySoft,
     borderRadius: 12,
     padding: 4,
     gap: 4,
@@ -189,10 +191,10 @@ const styles = StyleSheet.create({
     borderRadius: 9,
   },
   selectedMethod: {
-    backgroundColor: '#196652',
+    backgroundColor: colors.primary,
   },
   methodText: {
-    color: '#486357',
+    color: colors.muted,
     fontSize: 15,
     fontWeight: '600',
     textAlign: 'center',
@@ -201,7 +203,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   label: {
-    color: '#234A3D',
+    color: colors.text,
     fontSize: 14,
     fontWeight: '500',
     marginBottom: 8,
@@ -209,10 +211,10 @@ const styles = StyleSheet.create({
   input: {
     minHeight: 56,
     borderWidth: 1,
-    borderColor: '#B8CBC2',
+    borderColor: colors.border,
     borderRadius: 12,
     backgroundColor: '#FFFFFF',
-    color: '#173B30',
+    color: colors.text,
     paddingHorizontal: 14,
     paddingVertical: 14,
     fontSize: 16,
@@ -225,7 +227,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderRadius: 12,
-    backgroundColor: '#196652',
+    backgroundColor: colors.primary,
   },
   continueText: {
     color: '#FFFFFF',
@@ -242,7 +244,7 @@ const styles = StyleSheet.create({
     columnGap: 4,
   },
   signUpText: {
-    color: '#52675F',
+    color: colors.muted,
     fontSize: 14,
     textAlign: 'center',
   },
@@ -253,7 +255,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   signUpLink: {
-    color: '#196652',
+    color: colors.primary,
     fontSize: 14,
     fontWeight: '700',
     textAlign: 'center',

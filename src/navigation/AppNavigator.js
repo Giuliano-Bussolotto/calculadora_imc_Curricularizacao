@@ -1,26 +1,49 @@
 import { useEffect, useState } from 'react';
-import { BackHandler } from 'react-native';
+import { BackHandler, SafeAreaView, StyleSheet, View } from 'react-native';
+import BottomNavigation from '../components/BottomNavigation';
 import CalculatorScreen from '../screens/CalculatorScreen';
+import HomeScreen from '../screens/HomeScreen';
 import LoginScreen from '../screens/LoginScreen';
+import PlaceholderScreen from '../screens/PlaceholderScreen';
+import { colors } from '../theme';
 
 // Navegação local e temporária. Não representa uma sessão autenticada.
 export default function AppNavigator() {
   const [screen, setScreen] = useState('login');
 
   useEffect(() => {
-    if (screen !== 'calculator') return;
+    if (screen === 'login') return;
 
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      setScreen('login');
+      setScreen(current => current === 'home' ? 'login' : 'home');
       return true;
     });
 
     return () => subscription.remove();
   }, [screen]);
 
-  if (screen === 'calculator') {
-    return <CalculatorScreen />;
+  if (screen === 'login') {
+    return <LoginScreen onContinue={() => setScreen('home')} />;
   }
 
-  return <LoginScreen onContinue={() => setScreen('calculator')} />;
+  let content;
+  if (screen === 'home') content = <HomeScreen onNavigate={setScreen} />;
+  else if (screen === 'calculator') content = <CalculatorScreen />;
+  else content = (
+    <PlaceholderScreen
+      title={{ agenda: 'Agenda', feed: 'Feed', profile: 'Perfil', activities: 'Atividades e Treinos', nutrition: 'Alimentação', notifications: 'Notificações' }[screen] || 'Em breve'}
+    />
+  );
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.content}>{content}</View>
+      <BottomNavigation activeScreen={screen} onNavigate={setScreen} />
+    </SafeAreaView>
+  );
 }
+
+const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: colors.surface },
+  content: { flex: 1, backgroundColor: colors.background },
+});
