@@ -232,6 +232,24 @@ test('Feed não oferece comentários no escopo atual do produto', () => {
   const tree = component.render({ currentUser: { id: 'patient-ana', role: 'patient' } });
   assert.equal(nodes(tree, node => /coment/i.test(node.props?.accessibilityLabel || '')).length, 0);
 });
+
+test('notificações incluem consulta automática e preferências essenciais funcionais', () => {
+  const component = renderComponent('src/screens/NotificationsScreen.js', {
+    imports: {
+      '../components/AppIcon': 'AppIcon',
+      '../theme': { colors: {}, shadows: { card: {} } },
+    },
+  });
+  let tree = component.render();
+  assert.equal(byLabel(tree, 'Lembrete automático de consulta ativo').type, 'View');
+  assert.equal(byLabel(tree, 'Lembrete de Hidratação').props.accessibilityState.checked, true);
+  assert.equal(byLabel(tree, 'Lembrete de Caminhadas').props.accessibilityState.checked, false);
+  assert.equal(byLabel(tree, 'Lembrete de Exercícios').props.accessibilityState.checked, true);
+
+  byLabel(tree, 'Lembrete de Caminhadas').props.onPress();
+  tree = component.render();
+  assert.equal(byLabel(tree, 'Lembrete de Caminhadas').props.accessibilityState.checked, true);
+});
 function calculate(component, weight, height, { birthDate = '20/09/1996', sex = 'male' } = {}) {
   const tree = component.render();
   const fields = nodes(tree, node => node.type === 'TextInput');
@@ -310,6 +328,7 @@ test('fluxo Login → Início → Calculadora calcula IMC; voltar retorna ao in�
       '../components/BottomNavigation': 'BottomNavigation',
       '../screens/AgendaScreen': 'AgendaScreen',
       '../screens/LoginScreen': 'LoginScreen',
+      '../screens/NotificationsScreen': 'NotificationsScreen',
       '../screens/HomeScreen': 'HomeScreen',
       '../screens/CalculatorScreen': 'CalculatorScreen',
       '../screens/FeedScreen': 'FeedScreen',

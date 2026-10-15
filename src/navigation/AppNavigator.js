@@ -6,6 +6,7 @@ import CalculatorScreen from '../screens/CalculatorScreen';
 import FeedScreen from '../screens/FeedScreen';
 import HomeScreen from '../screens/HomeScreen';
 import LoginScreen from '../screens/LoginScreen';
+import NotificationsScreen from '../screens/NotificationsScreen';
 import PlaceholderScreen from '../screens/PlaceholderScreen';
 import PermissionsScreen from '../screens/PermissionsScreen';
 import RolesScreen from '../screens/RolesScreen';
@@ -35,11 +36,12 @@ export default function AppNavigator() {
   else if (screen === 'calculator') content = <CalculatorScreen />;
   else if (screen === 'agenda') content = <AgendaScreen />;
   else if (screen === 'feed') content = <FeedScreen />;
+  else if (screen === 'notifications') content = <NotificationsScreen />;
   else if (screen === 'roles') content = <RolesScreen onBack={() => setScreen('profile')} onSelectRole={roleId => setScreen(`permissions:${roleId}`)} />;
   else if (screen.startsWith('permissions:')) content = <PermissionsScreen roleId={screen.split(':')[1]} onBack={() => setScreen('roles')} />;
   else content = (
     <PlaceholderScreen
-      title={{ profile: 'Perfil', activities: 'Atividades e Treinos', nutrition: 'Alimentação', notifications: 'Notificações' }[screen] || 'Em breve'}
+      title={{ profile: 'Perfil', activities: 'Atividades e Treinos', nutrition: 'Alimentação' }[screen] || 'Em breve'}
     />
   );
 
