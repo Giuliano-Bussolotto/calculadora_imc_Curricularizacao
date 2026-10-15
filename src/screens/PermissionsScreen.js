@@ -42,6 +42,11 @@ export default function PermissionsScreen({ roleId, onBack }) {
         <Text style={styles.noticeTitle}>Dados protegidos</Text>
         <Text style={styles.noticeText}>Agendas, acessos, curtidas, históricos e dados pessoais de outros usuários não ficam disponíveis para este perfil.</Text>
       </View>
+
+      <View style={styles.notice}>
+        <Text style={styles.noticeTitle}>Edições de conteúdo</Text>
+        <Text style={styles.noticeText}>Nenhum cargo edita publicações de outra pessoa diretamente. A solicitação fica visível somente para quem solicitou e para o autor da publicação.</Text>
+      </View>
     </ScrollView>
   );
 }
