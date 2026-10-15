@@ -7,6 +7,7 @@ import FeedScreen from '../screens/FeedScreen';
 import HomeScreen from '../screens/HomeScreen';
 import LoginScreen from '../screens/LoginScreen';
 import PlaceholderScreen from '../screens/PlaceholderScreen';
+import RolesScreen from '../screens/RolesScreen';
 import { colors } from '../theme';
 
 // Navegação local e temporária. Não representa uma sessão autenticada.
@@ -33,6 +34,7 @@ export default function AppNavigator() {
   else if (screen === 'calculator') content = <CalculatorScreen />;
   else if (screen === 'agenda') content = <AgendaScreen />;
   else if (screen === 'feed') content = <FeedScreen />;
+  else if (screen === 'roles') content = <RolesScreen onBack={() => setScreen('profile')} />;
   else content = (
     <PlaceholderScreen
       title={{ profile: 'Perfil', activities: 'Atividades e Treinos', nutrition: 'Alimentação', notifications: 'Notificações' }[screen] || 'Em breve'}

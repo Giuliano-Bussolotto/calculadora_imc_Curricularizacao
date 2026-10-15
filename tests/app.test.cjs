@@ -109,6 +109,30 @@ function calculator() {
     },
   });
 }
+
+test('cargos da clínica ficam centralizados e permitem abrir o fluxo de nova função', () => {
+  const { roles, getRole } = require('../src/domain/access/roles');
+  assert.deepEqual(roles.map(role => role.id), [
+    'supervisor', 'doctor', 'nutritionist', 'pilates_teacher', 'psychologist', 'patient', 'public',
+  ]);
+  assert.equal(getRole('doctor').name, 'Médico');
+  assert.equal(getRole('unknown'), null);
+
+  let notice;
+  const component = renderComponent('src/screens/RolesScreen.js', {
+    imports: {
+      '../components/AppIcon': 'AppIcon',
+      '../domain/access/roles': { roles },
+      '../theme': { colors: {}, shadows: { card: {} } },
+    },
+    native: { Alert: { alert(...args) { notice = args; } } },
+  });
+  const tree = component.render({ onBack() {} });
+  assert.equal(nodes(tree, node => /^Cargo /.test(node.props?.accessibilityLabel || '')).length, roles.length);
+  byLabel(tree, 'Criar nova função').props.onPress();
+  assert.equal(notice[0], 'Criar nova função');
+  assert.match(notice[1], /backend/);
+});
 function calculate(component, weight, height, { birthDate = '20/09/1996', sex = 'male' } = {}) {
   const tree = component.render();
   const fields = nodes(tree, node => node.type === 'TextInput');
@@ -191,6 +215,7 @@ test('fluxo Login → Início → Calculadora calcula IMC; voltar retorna ao in�
       '../screens/CalculatorScreen': 'CalculatorScreen',
       '../screens/FeedScreen': 'FeedScreen',
       '../screens/PlaceholderScreen': 'PlaceholderScreen',
+      '../screens/RolesScreen': 'RolesScreen',
       '../theme': { colors: {} },
     },
     native: { BackHandler: { addEventListener(event, handler) {
