@@ -103,7 +103,10 @@ function login(options = {}) {
 }
 function calculator() {
   return renderComponent('src/screens/CalculatorScreen.js', {
-    imports: { '../domain/imc/assessment': { assessBmi: input => assessBmi(input, '2026-09-20') } },
+    imports: {
+      '../domain/imc/assessment': { assessBmi: input => assessBmi(input, '2026-09-20') },
+      '../theme': { colors: { primary: '#087BEA' }, shadows: { card: {} } },
+    },
   });
 }
 function calculate(component, weight, height, { birthDate = '20/09/1996', sex = 'male' } = {}) {
@@ -265,7 +268,7 @@ test('campos na ordem nascimento, sexo, altura, peso e calcular, sem sexo inferi
   const controls = nodes(tree, node => ['TextInput', 'Pressable', 'Button'].includes(node.type));
   assert.deepEqual(controls.map(node => node.props.accessibilityLabel || node.props.title), [
     'Data de nascimento', 'Masculino — referência meninos', 'Feminino — referência meninas',
-    'Altura em metros', 'Peso em quilogramas', 'Calcular',
+    'Altura em metros', 'Peso em quilogramas', 'Calcular', 'Limpar campos',
   ]);
   assert.equal(controls[1].props.accessibilityState.checked, false);
   assert.equal(controls[2].props.accessibilityState.checked, false);
