@@ -165,7 +165,7 @@ test('dados pessoais e agendas ficam visíveis apenas ao proprietário ou Superv
   assert.equal(canViewOwnedResource(ana, { type: 'unknown', ownerId: ana.id }), false);
 });
 
-test('edição de publicações respeita autoria, menção e solicitação profissional', () => {
+test('edição de publicações de terceiros sempre exige solicitação profissional', () => {
   const { editMode, canEditPost, canRequestPostEdit } = require('../src/domain/feed/postPermissions');
   const post = { authorId: 'nutritionist-1', mentionedUserIds: ['doctor-mentioned'] };
   const author = { id: 'nutritionist-1', role: 'nutritionist' };
@@ -174,10 +174,20 @@ test('edição de publicações respeita autoria, menção e solicitação profi
   const patient = { id: 'patient-1', role: 'patient' };
 
   assert.equal(editMode(author, post), 'direct');
-  assert.equal(canEditPost(mentionedDoctor, post), true);
+  assert.equal(canEditPost(mentionedDoctor, post), false);
+  assert.equal(canRequestPostEdit(mentionedDoctor, post), true);
   assert.equal(canRequestPostEdit(otherDoctor, post), true);
   assert.equal(editMode(patient, post), 'none');
   assert.equal(canEditPost(patient, post), false);
+});
+
+test('solicitação de edição é privada entre autor e solicitante', () => {
+  const { canViewEditRequest } = require('../src/domain/feed/postPermissions');
+  const request = { requesterId: 'nutritionist-1', postAuthorId: 'doctor-1' };
+  assert.equal(canViewEditRequest({ id: 'nutritionist-1', role: 'nutritionist' }, request), true);
+  assert.equal(canViewEditRequest({ id: 'doctor-1', role: 'doctor' }, request), true);
+  assert.equal(canViewEditRequest({ id: 'pilates-1', role: 'pilates_teacher' }, request), false);
+  assert.equal(canViewEditRequest({ id: 'admin-1', role: 'supervisor' }, request), false);
 });
 
 test('botão de solicitação de edição confirma o envio e evita repetição', () => {

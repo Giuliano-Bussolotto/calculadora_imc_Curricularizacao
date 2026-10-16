@@ -4,7 +4,6 @@ function editMode(actor, post) {
   if (!actor || !post) return 'none';
   if (actor.id === post.authorId) return 'direct';
   if (!PROFESSIONAL_ROLES.has(actor.role)) return 'none';
-  if ((post.mentionedUserIds || []).includes(actor.id)) return 'direct';
   return 'request';
 }
 
@@ -16,4 +15,9 @@ function canRequestPostEdit(actor, post) {
   return editMode(actor, post) === 'request';
 }
 
-module.exports = { PROFESSIONAL_ROLES, editMode, canEditPost, canRequestPostEdit };
+function canViewEditRequest(viewer, request) {
+  if (!viewer || !request) return false;
+  return viewer.id === request.requesterId || viewer.id === request.postAuthorId;
+}
+
+module.exports = { PROFESSIONAL_ROLES, editMode, canEditPost, canRequestPostEdit, canViewEditRequest };
