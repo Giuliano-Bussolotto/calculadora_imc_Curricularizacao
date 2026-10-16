@@ -2,13 +2,13 @@ const roles = [
   {
     id: 'admin',
     name: 'Administrador (ADM)',
-    description: 'Titular único autorizado a atribuir o cargo de ADM.',
+    description: 'Titular autorizado a criar Supervisores/Diretores e atribuir o cargo de ADM.',
     status: 'active',
   },
   {
     id: 'supervisor',
     name: 'Supervisor/Diretor',
-    description: 'Administração completa da clínica, equipe e permissões.',
+    description: 'Gestão operacional, sem acesso a dados pessoais de terceiros nem atribuição de ADM.',
     status: 'active',
   },
   {

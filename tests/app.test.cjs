@@ -138,11 +138,13 @@ test('cargos da clínica ficam centralizados e permitem abrir o fluxo de nova fu
   assert.match(notice[1], /backend/);
 });
 
-test('somente o ADM Giuliano pode atribuir cargo de Supervisor ou Diretor', () => {
-  const { CURRENT_SUPERVISOR_CREATORS, canCreateSupervisor } = require('../src/domain/access/supervisorCreation');
-  assert.deepEqual(CURRENT_SUPERVISOR_CREATORS.map(user => user.name), ['Giuliano']);
+test('somente o ADM Giuliano pode criar Supervisor/Diretor e atribuir ADM', () => {
+  const { CURRENT_ADMIN_AUTHORIZERS, canAssignAdmin, canCreateSupervisor } = require('../src/domain/access/supervisorCreation');
+  assert.deepEqual(CURRENT_ADMIN_AUTHORIZERS.map(user => user.name), ['Giuliano']);
   assert.equal(canCreateSupervisor({ id: 'admin-giuliano', role: 'admin' }), true);
+  assert.equal(canAssignAdmin({ id: 'admin-giuliano', role: 'admin' }), true);
   assert.equal(canCreateSupervisor({ id: 'supervisor-yenny', role: 'supervisor' }), false);
+  assert.equal(canAssignAdmin({ id: 'supervisor-yenny', role: 'supervisor' }), false);
   assert.equal(canCreateSupervisor({ id: 'supervisor-yohgenson', role: 'supervisor' }), false);
   assert.equal(canCreateSupervisor({ id: 'supervisor-new', role: 'supervisor' }), false);
   assert.equal(canCreateSupervisor({ id: 'admin-giuliano', role: 'doctor' }), false);
@@ -153,7 +155,7 @@ test('somente o ADM Giuliano pode atribuir cargo de Supervisor ou Diretor', () =
     imports: {
       '../components/AppIcon': 'AppIcon',
       '../domain/access/roles': { roles },
-      '../domain/access/supervisorCreation': { canCreateSupervisor },
+      '../domain/access/supervisorCreation': { canAssignAdmin, canCreateSupervisor },
       '../theme': { colors: {}, shadows: { card: {} } },
     },
     native: { Alert: { alert(...args) { notice = args; } } },
@@ -161,9 +163,12 @@ test('somente o ADM Giuliano pode atribuir cargo de Supervisor ou Diretor', () =
   const authorized = component.render({ onBack() {}, onSelectRole() {}, currentUser: { id: 'admin-giuliano', role: 'admin' } });
   byLabel(authorized, 'Criar novo Supervisor ou Diretor').props.onPress();
   assert.equal(notice[0], 'Novo Supervisor/Diretor');
+  byLabel(authorized, 'Atribuir cargo de ADM').props.onPress();
+  assert.equal(notice[0], 'Atribuir cargo de ADM');
 
   const blocked = component.render({ onBack() {}, onSelectRole() {}, currentUser: { id: 'supervisor-new', role: 'supervisor' } });
   assert.equal(nodes(blocked, node => node.props?.accessibilityLabel === 'Criar novo Supervisor ou Diretor').length, 0);
+  assert.equal(nodes(blocked, node => node.props?.accessibilityLabel === 'Atribuir cargo de ADM').length, 0);
 });
 
 test('Psicóloga acessa somente solicitações de edição e menções', () => {
@@ -175,11 +180,12 @@ test('Psicóloga acessa somente solicitações de edição e menções', () => {
   assert.equal(permissionsFor('psychologist').canViewPersonalData, false);
 });
 
-test('dados pessoais e agendas ficam visíveis apenas ao proprietário ou Supervisor/Diretor', () => {
+test('dados pessoais e agendas ficam visíveis apenas ao proprietário ou ADM', () => {
   const { canViewOwnedResource, visibleOwnedResources } = require('../src/domain/access/privacy');
   const ana = { id: 'patient-ana', role: 'patient' };
   const doctor = { id: 'doctor-1', role: 'doctor' };
-  const admin = { id: 'admin-1', role: 'supervisor' };
+  const admin = { id: 'admin-giuliano', role: 'admin' };
+  const supervisor = { id: 'supervisor-1', role: 'supervisor' };
   const resources = [
     { id: 'a', type: 'appointment', ownerId: 'patient-ana' },
     { id: 'b', type: 'notification', ownerId: 'doctor-1' },
@@ -191,6 +197,7 @@ test('dados pessoais e agendas ficam visíveis apenas ao proprietário ou Superv
   assert.deepEqual(visibleOwnedResources(ana, resources).map(item => item.id), ['a']);
   assert.deepEqual(visibleOwnedResources(doctor, resources).map(item => item.id), ['b']);
   assert.deepEqual(visibleOwnedResources(admin, resources).map(item => item.id), ['a', 'b', 'c']);
+  assert.deepEqual(visibleOwnedResources(supervisor, resources).map(item => item.id), []);
   assert.equal(canViewOwnedResource(ana, { type: 'unknown', ownerId: ana.id }), false);
 });
 

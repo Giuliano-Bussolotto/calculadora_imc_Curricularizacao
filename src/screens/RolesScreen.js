@@ -1,10 +1,10 @@
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import AppIcon from '../components/AppIcon';
 import { roles } from '../domain/access/roles';
-import { canCreateSupervisor } from '../domain/access/supervisorCreation';
+import { canAssignAdmin, canCreateSupervisor } from '../domain/access/supervisorCreation';
 import { colors, shadows } from '../theme';
 
-export default function RolesScreen({ onBack, onSelectRole, currentUser = { id: 'admin-giuliano', role: 'admin' } }) {
+export default function RolesScreen({ onBack, onSelectRole, currentUser = null }) {
   function createRole() {
     Alert.alert(
       'Criar nova função',
@@ -16,6 +16,13 @@ export default function RolesScreen({ onBack, onSelectRole, currentUser = { id: 
     Alert.alert(
       'Novo Supervisor/Diretor',
       'Permissão confirmada. O convite será enviado quando a integração com o backend estiver disponível.',
+    );
+  }
+
+  function assignAdmin() {
+    Alert.alert(
+      'Atribuir cargo de ADM',
+      'Permissão confirmada. A atribuição será conectada ao backend com autenticação e auditoria na próxima etapa.',
     );
   }
 
@@ -75,6 +82,17 @@ export default function RolesScreen({ onBack, onSelectRole, currentUser = { id: 
           style={({ pressed }) => [styles.adminButton, pressed && styles.pressed]}
         >
           <Text style={styles.adminButtonText}>Criar Supervisor/Diretor</Text>
+        </Pressable>
+      )}
+
+      {canAssignAdmin(currentUser) && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Atribuir cargo de ADM"
+          onPress={assignAdmin}
+          style={({ pressed }) => [styles.adminButton, pressed && styles.pressed]}
+        >
+          <Text style={styles.adminButtonText}>Atribuir cargo de ADM</Text>
         </Pressable>
       )}
     </ScrollView>

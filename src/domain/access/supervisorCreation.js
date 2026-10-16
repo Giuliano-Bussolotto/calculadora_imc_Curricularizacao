@@ -1,11 +1,19 @@
-const CURRENT_SUPERVISOR_CREATORS = [
+const CURRENT_ADMIN_AUTHORIZERS = [
   { id: 'admin-giuliano', name: 'Giuliano' },
 ];
 
-const allowedCreatorIds = new Set(CURRENT_SUPERVISOR_CREATORS.map(user => user.id));
+const allowedAuthorizerIds = new Set(CURRENT_ADMIN_AUTHORIZERS.map(user => user.id));
 
-function canCreateSupervisor(user) {
-  return Boolean(user && user.role === 'admin' && allowedCreatorIds.has(user.id));
+function isCurrentAdmin(user) {
+  return Boolean(user && user.role === 'admin' && allowedAuthorizerIds.has(user.id));
 }
 
-module.exports = { CURRENT_SUPERVISOR_CREATORS, canCreateSupervisor };
+function canCreateSupervisor(user) {
+  return isCurrentAdmin(user);
+}
+
+function canAssignAdmin(user) {
+  return isCurrentAdmin(user);
+}
+
+module.exports = { CURRENT_ADMIN_AUTHORIZERS, canCreateSupervisor, canAssignAdmin };

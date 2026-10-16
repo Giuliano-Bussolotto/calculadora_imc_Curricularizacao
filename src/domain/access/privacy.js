@@ -1,4 +1,4 @@
-const ADMIN_ROLES = new Set(['supervisor']);
+const ADMIN_ROLES = new Set(['admin']);
 const PROTECTED_RESOURCES = new Set([
   'schedule', 'appointment', 'notification', 'access', 'like', 'history', 'personal_data',
 ]);
