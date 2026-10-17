@@ -14,5 +14,10 @@
     "ios": "expo start --ios",
     "test": "node --test tests/*.test.cjs"
   },
-  "private": true
+  "private": true,
+  "overrides": {
+    "xcode": {
+      "uuid": "11.1.1"
+    }
+  }
 }
