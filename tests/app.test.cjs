@@ -306,7 +306,7 @@ function calculate(component, weight, height, { birthDate = '20/09/1996', sex = 
   byLabel(component.render(), sex === 'male' ? 'Masculino — referência meninos' : 'Feminino — referência meninas').props.onPress();
   fields[1].props.onChangeText(height);
   fields[2].props.onChangeText(weight);
-  nodes(component.render(), node => node.type === 'Button')[0].props.onPress();
+  byLabel(component.render(), 'Calcular').props.onPress();
   return nodes(component.render(), node => node.props?.accessibilityLiveRegion === 'polite')[0].props.children;
 }
 
@@ -468,7 +468,7 @@ test('máscara de nascimento aceita oito dígitos e datas impossíveis são reje
   const component = calculator();
   byLabel(component.render(), 'Data de nascimento').props.onChangeText('31022015');
   assert.equal(byLabel(component.render(), 'Data de nascimento').props.value, '31/02/2015');
-  nodes(component.render(), node => node.type === 'Button')[0].props.onPress();
+  byLabel(component.render(), 'Calcular').props.onPress();
   assert.match(nodes(component.render(), node => node.props?.accessibilityLiveRegion === 'polite')[0].props.children, /data de nascimento válida/);
 });
 
@@ -481,14 +481,17 @@ test('criança tem idade, IMC e classificação WHO 2007 sem mostrar o Z técnic
   assert.doesNotMatch(result, /Escore|Z-score/);
 });
 
-test('resultado reserva um card vazio para futura mensagem com IA', () => {
+test('resultado mostra explicação do card de mensagem de motivação', () => {
   const component = calculator();
-  const label = 'Espaço reservado para futura mensagem com inteligência artificial';
+  const label = 'Mensagem de motivação após o resultado';
   assert.equal(nodes(component.render(), node => node.props?.accessibilityLabel === label).length, 0);
   calculate(component, '70', '175');
   const card = byLabel(component.render(), label);
   assert.equal(card.type, 'View');
-  assert.equal(card.props.children, undefined);
+  assert.deepEqual(nodes(card, node => node.type === 'Text').map(node => node.props.children), [
+    'Mensagem de motivação',
+    'Após o cálculo, uma mensagem de motivação será exibida aqui junto ao seu resultado.',
+  ]);
 });
 
 for (const [birthDate, message] of [
