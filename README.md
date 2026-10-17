@@ -18,9 +18,31 @@ Atualmente, o aplicativo possui:
 - Classificação de IMC para adultos;
 - Classificação pediátrica baseada na WHO Growth Reference 2007;
 - Validação dos dados informados;
+- Perfil com nome, foto (avatar padrão quando não há imagem) e consulta de postagens próprias, salvos e curtidos;
+- Histórico local de cálculos de IMC;
+- Confirmação de comparecimento e realização de consultas na Agenda, com histórico no Perfil;
 - Compatibilidade planejada para Android e iOS.
 
 A autenticação ainda é demonstrativa. Nesta etapa, nenhum dado de login é enviado ou armazenado em banco de dados.
+
+### Perfil
+
+O Perfil utiliza a usuária demonstrativa Ana, já presente no Feed e na Agenda. As
+postagens editadas, curtidas, itens salvos, resultados de IMC e confirmações de
+consultas são armazenados no aparelho com AsyncStorage e recuperados ao reabrir o
+aplicativo. Não há sincronização com a clínica ou entre dispositivos.
+
+As consultas demonstrativas recebem a data do primeiro uso e mantêm essa data nos
+acessos seguintes. A Agenda exibe os compromissos do dia selecionado. Após o horário
+final do atendimento, o usuário pode confirmar que compareceu e realizou a consulta;
+somente então ela aparece em Consultas concluídas. Essa confirmação é uma declaração
+do usuário, sem validação pela clínica.
+
+O formulário Alterar senha valida senha atual preenchida, nova senha com pelo menos
+8 caracteres, diferença em relação à atual e confirmação correspondente. Por decisão
+de escopo, a troca real aguarda integração com autenticação: nenhuma senha é salva
+e nenhuma alteração de credencial é simulada. A área Termos e políticas fica vazia
+para receber conteúdo futuramente.
 
 ## Avaliação por faixa etária
 

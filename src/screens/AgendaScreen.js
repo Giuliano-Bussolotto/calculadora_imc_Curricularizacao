@@ -2,6 +2,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { useState } from 'react';
 import AppIcon from '../components/AppIcon';
 import { visibleOwnedResources } from '../domain/access/privacy';
+import { canCompleteAppointment, createProfileData } from '../domain/profile/profileData';
 import { colors, shadows } from '../theme';
 
 const monthNames = [
@@ -9,12 +10,6 @@ const monthNames = [
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
 ];
 const weekDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-const demoAppointments = [
-  { id: 'appointment-1', ownerId: 'patient-ana', type: 'appointment', specialty: 'Nutrição', professional: 'Dra. Juliana', time: '09:00 – 09:30', icon: 'nutrition' },
-  { id: 'appointment-2', ownerId: 'patient-ana', type: 'appointment', specialty: 'Pilates', professional: 'Prof. Ana', time: '10:00 – 11:00', icon: 'activity' },
-  { id: 'appointment-3', ownerId: 'patient-ana', type: 'appointment', specialty: 'Psicologia', professional: 'Dra. Carla', time: '14:00 – 15:00', icon: 'profile' },
-];
-
 function calendarDays(year, month) {
   const firstWeekDay = new Date(year, month, 1).getDay();
   const total = new Date(year, month + 1, 0).getDate();
@@ -24,14 +19,23 @@ function calendarDays(year, month) {
   ];
 }
 
-export default function AgendaScreen({ currentUser = { id: 'patient-ana', role: 'patient' }, appointments = demoAppointments }) {
+export default function AgendaScreen({ currentUser = { id: 'patient-ana', role: 'patient' }, appointments = createProfileData().appointments, onCompleteAppointment }) {
   const today = new Date();
   const [visibleMonth, setVisibleMonth] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
   const [selectedDay, setSelectedDay] = useState(today.getDate());
   const year = visibleMonth.getFullYear();
   const month = visibleMonth.getMonth();
   const days = calendarDays(year, month);
-  const visibleAppointments = visibleOwnedResources(currentUser, appointments);
+  const selectedDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(selectedDay).padStart(2, '0')}`;
+  const visibleAppointments = visibleOwnedResources(currentUser, appointments).filter(item => item.date === selectedDate);
+
+  function confirmAttendance(item) {
+    if (!canCompleteAppointment(item, currentUser.id)) return;
+    Alert.alert('Confirmar consulta realizada', `Você compareceu e realizou o atendimento de ${item.specialty} com ${item.professional}?`, [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Sim, realizei a consulta', onPress: () => onCompleteAppointment?.(item.id) },
+    ]);
+  }
 
   function changeMonth(offset) {
     const next = new Date(year, month + offset, 1);
@@ -100,20 +104,33 @@ export default function AgendaScreen({ currentUser = { id: 'patient-ana', role: 
       <Text style={styles.selectedTitle}>{selectedDay} de {monthNames[month]}</Text>
       <View style={styles.appointments}>
         {visibleAppointments.map(item => (
-          <Pressable
+          <View
             key={item.id}
-            accessibilityRole="button"
-            accessibilityLabel={`${item.specialty}, ${item.professional}, ${item.time}`}
-            style={({ pressed }) => [styles.appointment, pressed && styles.pressed]}
+            style={styles.appointment}
           >
             <View style={styles.appointmentIcon}><AppIcon name={item.icon} active size={20} /></View>
             <View style={styles.appointmentText}>
               <Text style={styles.appointmentType}>{item.specialty}</Text>
               <Text style={styles.professional}>{item.professional}</Text>
               <Text style={styles.time}>{item.time}</Text>
+              {item.completedAt ? (
+                <Text style={styles.completed}>✓ Consulta realizada · confirmada por você</Text>
+              ) : onCompleteAppointment && (
+                <>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Confirmar realização da consulta de ${item.specialty}`}
+                    disabled={!canCompleteAppointment(item, currentUser.id)}
+                    onPress={() => confirmAttendance(item)}
+                    style={[styles.completeButton, !canCompleteAppointment(item, currentUser.id) && styles.disabled]}
+                  >
+                    <Text style={styles.completeText}>Compareci e realizei a consulta</Text>
+                  </Pressable>
+                  {!canCompleteAppointment(item, currentUser.id) && <Text style={styles.pendingText}>Confirme após o horário do atendimento.</Text>}
+                </>
+              )}
             </View>
-            <AppIcon name="arrow" size={25} />
-          </Pressable>
+          </View>
         ))}
         {visibleAppointments.length === 0 && (
           <View style={styles.emptyState} accessibilityLiveRegion="polite">
@@ -158,5 +175,10 @@ const styles = StyleSheet.create({
   appointmentType: { color: colors.text, fontSize: 14, fontWeight: '800' },
   professional: { marginTop: 2, color: colors.muted, fontSize: 12 },
   time: { marginTop: 2, color: colors.primaryDark, fontSize: 12, fontWeight: '700' },
+  completeButton: { minHeight: 48, marginTop: 12, padding: 10, borderRadius: 12, backgroundColor: colors.primarySoft, justifyContent: 'center' },
+  completeText: { color: colors.primaryDark, fontSize: 13, fontWeight: '700' },
+  completed: { marginTop: 10, color: '#26784A', fontSize: 13, lineHeight: 19 },
+  pendingText: { marginTop: 6, color: colors.muted, fontSize: 12, lineHeight: 18 },
+  disabled: { opacity: 0.5 },
   pressed: { opacity: 0.7 },
 });

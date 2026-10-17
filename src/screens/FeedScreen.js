@@ -13,15 +13,20 @@ const featuredPost = {
   mentionedUserIds: [],
 };
 
-export default function FeedScreen({ currentUser = { id: 'patient-ana', role: 'patient' } }) {
+export default function FeedScreen({ currentUser = { id: 'patient-ana', role: 'patient' }, profileData, onTogglePost, onUpdatePost }) {
   const [activeFilter, setActiveFilter] = useState('Todos');
-  const [liked, setLiked] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [localLiked, setLiked] = useState(false);
+  const [localSaved, setSaved] = useState(false);
   const [editRequested, setEditRequested] = useState(false);
-  const [myPostText, setMyPostText] = useState('Hoje completei minha caminhada e cuidei um pouco mais de mim.');
+  const ownPost = profileData?.posts.find(post => post.authorId === currentUser.id);
+  const [localPostText, setMyPostText] = useState('Hoje completei minha caminhada e cuidei um pouco mais de mim.');
+  const myPostText = ownPost?.text ?? localPostText;
   const [draft, setDraft] = useState(myPostText);
   const [editingMyPost, setEditingMyPost] = useState(false);
   const featuredEditMode = editMode(currentUser, featuredPost);
+  const liked = profileData ? profileData.likedPostIds.includes(featuredPost.id) : localLiked;
+  const saved = profileData ? profileData.savedPostIds.includes(featuredPost.id) : localSaved;
+  const nutritionPost = profileData?.posts.find(post => post.id === featuredPost.id);
 
   function createPost() {
     Alert.alert('Nova publicação', 'A criação de publicações será habilitada conforme as permissões do perfil profissional.');
@@ -69,7 +74,7 @@ export default function FeedScreen({ currentUser = { id: 'patient-ana', role: 'p
         </View>
 
         <Text style={styles.postText}>
-          Uma alimentação equilibrada é a base para mais energia e qualidade de vida. <Text style={styles.blueHeart}>♥</Text>
+          {nutritionPost?.text || 'Uma alimentação equilibrada é a base para mais energia e qualidade de vida. 💙'}
         </Text>
 
         {featuredEditMode !== 'none' && (
@@ -105,7 +110,7 @@ export default function FeedScreen({ currentUser = { id: 'patient-ana', role: 'p
               accessibilityRole="button"
               accessibilityLabel={liked ? 'Remover curtida' : 'Curtir publicação'}
               accessibilityState={{ selected: liked }}
-              onPress={() => setLiked(value => !value)}
+              onPress={() => onTogglePost ? onTogglePost('likedPostIds', featuredPost.id) : setLiked(value => !value)}
               style={styles.actionButton}
             >
               <Text style={[styles.actionHeart, liked && styles.liked]}>{liked ? '♥' : '♡'}</Text>
@@ -116,7 +121,7 @@ export default function FeedScreen({ currentUser = { id: 'patient-ana', role: 'p
             accessibilityRole="button"
             accessibilityLabel={saved ? 'Remover dos salvos' : 'Salvar publicação'}
             accessibilityState={{ selected: saved }}
-            onPress={() => setSaved(value => !value)}
+            onPress={() => onTogglePost ? onTogglePost('savedPostIds', featuredPost.id) : setSaved(value => !value)}
             style={styles.actionButton}
           >
             <Text style={[styles.bookmark, saved && styles.saved]}>{saved ? '◆' : '◇'}</Text>
@@ -138,7 +143,7 @@ export default function FeedScreen({ currentUser = { id: 'patient-ana', role: 'p
           <View style={styles.authorRowCompact}>
             <View style={styles.avatarPatient}><Text style={styles.avatarText}>A</Text></View>
             <View style={styles.compactContent}>
-              <Text style={styles.author}>Ana</Text>
+              <Text style={styles.author}>{currentUser.name || 'Ana'}</Text>
               <Text style={styles.authorMeta}>Minha publicação · hoje</Text>
             </View>
           </View>
@@ -168,7 +173,12 @@ export default function FeedScreen({ currentUser = { id: 'patient-ana', role: 'p
                   accessibilityRole="button"
                   accessibilityLabel="Salvar minha publicação"
                   disabled={!draft.trim()}
-                  onPress={() => { setMyPostText(draft.trim()); setEditingMyPost(false); }}
+                  onPress={() => {
+                    if (!draft.trim()) return;
+                    if (onUpdatePost && ownPost) onUpdatePost(ownPost.id, draft.trim());
+                    else setMyPostText(draft.trim());
+                    setEditingMyPost(false);
+                  }}
                   style={[styles.saveButton, !draft.trim() && styles.disabled]}
                 >
                   <Text style={styles.saveButtonText}>Salvar</Text>
@@ -178,7 +188,7 @@ export default function FeedScreen({ currentUser = { id: 'patient-ana', role: 'p
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Editar minha publicação"
-                onPress={() => setEditingMyPost(true)}
+                onPress={() => { setDraft(myPostText); setEditingMyPost(true); }}
                 style={styles.secondaryButton}
               >
                 <Text style={styles.secondaryButtonText}>Editar minha publicação</Text>

@@ -15,7 +15,7 @@ import {
 import { assessBmi } from '../domain/imc/assessment';
 import { colors, shadows } from '../theme';
 
-export default function CalculatorScreen() {
+export default function CalculatorScreen({ onAssessment } = {}) {
   const [dataNascimento, setDataNascimento] = useState('');
   const [sexo, setSexo] = useState('');
   const [peso, setPeso] = useState('');
@@ -39,6 +39,7 @@ export default function CalculatorScreen() {
       replaceResult(evaluation.message);
       return;
     }
+    onAssessment?.(evaluation);
     const { years, months } = evaluation.age;
     const idade = `Idade: ${years} ${years === 1 ? 'ano' : 'anos'} e ${months} ${months === 1 ? 'mês' : 'meses'}`;
     const imc = `IMC: ${evaluation.bmi.toFixed(2).replace('.', ',')}`;

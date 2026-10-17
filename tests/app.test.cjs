@@ -8,7 +8,7 @@ const { assessBmi } = require('../src/domain/imc/assessment');
 
 // Testes de lógica/eventos com hooks simulados. Não substituem renderização nativa.
 // Os transformadores Babel já são instalados pelo Expo; não há dependências novas.
-function renderComponent(file, { imports = {}, native = {} } = {}) {
+function renderComponent(file, { imports = {}, native = {}, globals = {} } = {}) {
   const slots = [];
   let cursor = 0;
   let effects = [];
@@ -33,7 +33,7 @@ function renderComponent(file, { imports = {}, native = {} } = {}) {
   };
   const reactNative = {
     ...Object.fromEntries([
-      'Button', 'KeyboardAvoidingView', 'Pressable', 'SafeAreaView', 'ScrollView', 'Text', 'TextInput', 'View',
+      'Button', 'Image', 'KeyboardAvoidingView', 'Pressable', 'SafeAreaView', 'ScrollView', 'Text', 'TextInput', 'View',
     ].map(name => [name, name])),
     Platform: { OS: 'android' },
     StatusBar: Object.assign(function StatusBar() {}, { currentHeight: 24 }),
@@ -53,11 +53,13 @@ function renderComponent(file, { imports = {}, native = {} } = {}) {
   });
   const jsx = (type, props) => ({ type, props });
   const context = {
+    ...globals,
     exports: {},
     require(name) {
       if (name === 'react') return react;
       if (name === 'react-native') return reactNative;
       if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx };
+      if (name.endsWith('.png')) return 'BundledImage';
       if (name in imports) return imports[name];
       throw new Error(`Import não simulado: ${name}`);
     },
@@ -78,6 +80,7 @@ function renderComponent(file, { imports = {}, native = {} } = {}) {
 }
 
 function nodes(tree, predicate) {
+  if (Array.isArray(tree)) return tree.flatMap(child => nodes(child, predicate));
   if (!tree || typeof tree !== 'object') return [];
   return [
     ...(predicate(tree) ? [tree] : []),
@@ -381,6 +384,9 @@ test('fluxo Login → Início → Calculadora calcula IMC; voltar retorna ao in�
       '../screens/PlaceholderScreen': 'PlaceholderScreen',
       '../screens/PermissionsScreen': 'PermissionsScreen',
       '../screens/RolesScreen': 'RolesScreen',
+      '../screens/ProfileScreen': 'ProfileScreen',
+      '../hooks/useProfileData': () => ({ data: require('../src/domain/profile/profileData').createProfileData(), setData() {} }),
+      '../domain/profile/profileData': require('../src/domain/profile/profileData'),
       '../theme': { colors: {} },
     },
     native: { BackHandler: { addEventListener(event, handler) {
@@ -407,6 +413,16 @@ test('fluxo Login → Início → Calculadora calcula IMC; voltar retorna ao in�
   assert.equal(nodes(navigator.render(), node => node.type === 'AgendaScreen').length, 1);
   nodes(navigator.render(), node => node.type === 'BottomNavigation')[0].props.onNavigate('feed');
   assert.equal(nodes(navigator.render(), node => node.type === 'FeedScreen').length, 1);
+  nodes(navigator.render(), node => node.type === 'BottomNavigation')[0].props.onNavigate('profile');
+  const profile = nodes(navigator.render(), node => node.type === 'ProfileScreen')[0];
+  assert.equal(profile.props.currentUser.name, 'Ana');
+  assert.equal(profile.props.section, null);
+  profile.props.onSectionChange('bmi');
+  assert.equal(nodes(navigator.render(), node => node.type === 'ProfileScreen')[0].props.section, 'bmi');
+  assert.equal([...listeners][0](), true);
+  assert.equal(nodes(navigator.render(), node => node.type === 'ProfileScreen')[0].props.section, null);
+  assert.equal([...listeners][0](), true);
+  assert.equal(nodes(navigator.render(), node => node.type === 'HomeScreen').length, 1);
   navigator.unmount();
   assert.equal(listeners.size, 0);
 });
@@ -530,4 +546,162 @@ test('editar data de nascimento ou sexo invalida o resultado anterior', () => {
   calculate(component, '70', '175');
   byLabel(component.render(), 'Feminino — referência meninas').props.onPress();
   assert.equal(nodes(component.render(), node => node.props?.accessibilityLiveRegion === 'polite')[0].props.children, 'Toque em Calcular para ver o resultado.');
+});
+
+function profileComponent() {
+  return renderComponent('src/screens/ProfileScreen.js', {
+    imports: {
+      '../components/AppIcon': 'AppIcon',
+      '../domain/profile/profileData': require('../src/domain/profile/profileData'),
+      '../theme': { colors: {}, shadows: { card: {} } },
+    },
+  });
+}
+
+test('Perfil exibe nome, foto com fallback e apenas os botões solicitados', () => {
+  const { demoUser, createProfileData } = require('../src/domain/profile/profileData');
+  const component = profileComponent();
+  let selected;
+  const props = { currentUser: demoUser, data: createProfileData(), onSectionChange(value) { selected = value; } };
+  let tree = component.render(props);
+  assert.equal(nodes(tree, node => node.type === 'Text' && node.props.children === 'Ana').length, 1);
+  assert.equal(byLabel(tree, 'Foto de perfil padrão').props.source, 'BundledImage');
+  assert.deepEqual(nodes(tree, node => node.type === 'Pressable').map(node => node.props.accessibilityLabel), [
+    'Alterar senha', 'Minhas postagens', 'Itens salvos', 'Itens curtidos', 'Histórico de cálculos de IMC', 'Consultas concluídas', 'Termos e políticas',
+  ]);
+  byLabel(tree, 'Histórico de cálculos de IMC').props.onPress();
+  assert.equal(selected, 'bmi');
+  tree = component.render({ ...props, currentUser: { ...demoUser, photoUri: 'https://example.com/ana.jpg' } });
+  const photo = byLabel(tree, 'Foto de perfil de Ana');
+  assert.equal(photo.props.source.uri, 'https://example.com/ana.jpg');
+  photo.props.onError();
+  assert.equal(byLabel(component.render(props), 'Foto de perfil padrão').props.source, 'BundledImage');
+});
+
+test('Perfil mostra postagens, salvos, curtidos, históricos e estados vazios; termos fica sem conteúdo', () => {
+  const profile = require('../src/domain/profile/profileData');
+  const component = profileComponent();
+  let data = profile.createProfileData('2026-10-17');
+  const base = { currentUser: profile.demoUser, onSectionChange() {} };
+  for (const section of ['saved', 'liked', 'bmi', 'appointments']) {
+    const tree = component.render({ ...base, data, section });
+    assert.ok(nodes(tree, node => node.type === 'Text' && /ainda não|Nenhuma consulta/.test(node.props.children || '')).length);
+  }
+  data = profile.togglePost(data, 'savedPostIds', 'post-nutrition-1');
+  data = profile.togglePost(data, 'likedPostIds', 'post-nutrition-1');
+  data = profile.completeAppointment(data, profile.demoUser.id, 'appointment-1', new Date('2026-10-17T16:00:00'));
+  data = profile.recordBmi(data, profile.demoUser.id, assessBmi({ birthDate: '17/10/1996', sex: 'female', weight: '70', height: '175' }, '2026-10-17'));
+  for (const section of ['saved', 'liked']) {
+    assert.equal(nodes(component.render({ ...base, data, section }), node => node.type === 'Text' && node.props.children === 'Dra. Juliana').length, 1);
+  }
+  assert.ok(nodes(component.render({ ...base, data, section: 'posts' }), node => node.type === 'Text' && /Hoje completei/.test(node.props.children || '')).length);
+  assert.ok(nodes(component.render({ ...base, data, section: 'bmi' }), node => node.type === 'Text' && node.props.children === 'Peso adequado').length);
+  assert.ok(nodes(component.render({ ...base, data, section: 'appointments' }), node => node.type === 'Text' && /Comparecimento/.test(node.props.children || '')).length);
+  const terms = component.render({ ...base, data, section: 'terms' });
+  assert.deepEqual(nodes(terms, node => node.type === 'Text').map(node => node.props.children), ['‹', 'Termos e políticas']);
+});
+
+test('senha é mascarada, valida erros e não alega ter alterado credenciais; voltar limpa os campos', () => {
+  const { demoUser, createProfileData } = require('../src/domain/profile/profileData');
+  const component = profileComponent();
+  let section = 'password';
+  const props = () => ({ currentUser: demoUser, data: createProfileData(), section, onSectionChange(value) { section = value; } });
+  let tree = component.render(props());
+  assert.equal(nodes(tree, node => node.type === 'TextInput' && node.props.secureTextEntry).length, 3);
+  byLabel(tree, 'Validar dados de senha').props.onPress();
+  assert.match(nodes(component.render(props()), node => node.props.accessibilityLiveRegion === 'polite')[0].props.children, /senha atual/);
+  byLabel(tree, 'Senha atual').props.onChangeText('senha-atual');
+  byLabel(tree, 'Nova senha').props.onChangeText('nova-senha');
+  byLabel(tree, 'Confirmar nova senha').props.onChangeText('diferente');
+  byLabel(component.render(props()), 'Validar dados de senha').props.onPress();
+  assert.match(nodes(component.render(props()), node => node.props.accessibilityLiveRegion === 'polite')[0].props.children, /confirmação/);
+  byLabel(component.render(props()), 'Confirmar nova senha').props.onChangeText('nova-senha');
+  byLabel(component.render(props()), 'Validar dados de senha').props.onPress();
+  tree = component.render(props());
+  assert.match(nodes(tree, node => node.props.accessibilityLiveRegion === 'polite')[0].props.children, /senha não foi alterada/);
+  assert.ok(nodes(tree, node => node.type === 'TextInput').every(node => node.props.value === ''));
+  byLabel(tree, 'Senha atual').props.onChangeText('segredo');
+  byLabel(tree, 'Voltar para Perfil').props.onPress();
+  component.render(props());
+  section = 'password';
+  assert.ok(nodes(component.render(props()), node => node.type === 'TextInput').every(node => node.props.value === ''));
+});
+
+test('Agenda filtra pelo dia e exige confirmação explícita antes de registrar comparecimento', () => {
+  const profile = require('../src/domain/profile/profileData');
+  const fixedNow = new Date('2026-10-17T16:00:00');
+  class FixedDate extends Date {
+    constructor(...args) { super(...(args.length ? args : [fixedNow.getTime()])); }
+  }
+  let confirmation;
+  let completed;
+  const component = renderComponent('src/screens/AgendaScreen.js', {
+    globals: { Date: FixedDate },
+    imports: {
+      '../components/AppIcon': 'AppIcon',
+      '../domain/access/privacy': require('../src/domain/access/privacy'),
+      '../domain/profile/profileData': { ...profile, canCompleteAppointment: (item, id) => profile.canCompleteAppointment(item, id, fixedNow) },
+      '../theme': { colors: {}, shadows: { card: {} } },
+    },
+    native: { Alert: { alert(...args) { confirmation = args; } } },
+  });
+  let data = profile.createProfileData('2026-10-17');
+  const props = () => ({ currentUser: profile.demoUser, appointments: data.appointments, onCompleteAppointment(id) { completed = id; data = profile.completeAppointment(data, profile.demoUser.id, id, fixedNow); } });
+  let tree = component.render(props());
+  byLabel(tree, 'Confirmar realização da consulta de Nutrição').props.onPress();
+  assert.equal(completed, undefined);
+  assert.equal(confirmation[0], 'Confirmar consulta realizada');
+  assert.equal(confirmation[2][0].style, 'cancel');
+  confirmation[2][1].onPress();
+  assert.equal(completed, 'appointment-1');
+  tree = component.render(props());
+  assert.equal(nodes(tree, node => node.props.accessibilityLabel === 'Confirmar realização da consulta de Nutrição').length, 0);
+  byLabel(tree, '18 de Outubro de 2026').props.onPress();
+  tree = component.render(props());
+  assert.equal(nodes(tree, node => /Confirmar realização/.test(node.props.accessibilityLabel || '')).length, 0);
+  assert.equal(profile.profileCollections(data, profile.demoUser.id).appointments.length, 1);
+});
+
+test('Feed usa curtidas, salvos e edição compartilhados com o Perfil', () => {
+  const profile = require('../src/domain/profile/profileData');
+  let data = profile.createProfileData();
+  const props = () => ({
+    currentUser: profile.demoUser, profileData: data,
+    onTogglePost(collection, id) { data = profile.togglePost(data, collection, id); },
+    onUpdatePost(id, text) { data = profile.updateOwnPost(data, profile.demoUser.id, id, text); },
+  });
+  const component = renderComponent('src/screens/FeedScreen.js', { imports: {
+    '../components/AppIcon': 'AppIcon', '../domain/feed/postPermissions': require('../src/domain/feed/postPermissions'),
+    '../theme': { colors: {}, shadows: { card: {} } },
+  } });
+  byLabel(component.render(props()), 'Curtir publicação').props.onPress();
+  byLabel(component.render(props()), 'Salvar publicação').props.onPress();
+  byLabel(component.render(props()), 'Editar minha publicação').props.onPress();
+  byLabel(component.render(props()), 'Texto da minha publicação').props.onChangeText('Texto atualizado para o Perfil');
+  byLabel(component.render(props()), 'Salvar minha publicação').props.onPress();
+  const collections = profile.profileCollections(data, profile.demoUser.id);
+  assert.equal(collections.liked.length, 1);
+  assert.equal(collections.saved.length, 1);
+  assert.equal(collections.posts[0].text, 'Texto atualizado para o Perfil');
+  byLabel(component.render(props()), 'Remover curtida').props.onPress();
+  byLabel(component.render(props()), 'Remover dos salvos').props.onPress();
+  assert.equal(profile.profileCollections(data, profile.demoUser.id).liked.length, 0);
+  assert.equal(profile.profileCollections(data, profile.demoUser.id).saved.length, 0);
+});
+
+test('Calculadora informa resultados válidos ao histórico e não registra entradas inválidas', () => {
+  const evaluations = [];
+  const component = renderComponent('src/screens/CalculatorScreen.js', { imports: {
+    '../domain/imc/assessment': { assessBmi: input => assessBmi(input, '2026-09-20') },
+    '../theme': { colors: {}, shadows: { card: {} } },
+  } });
+  // Mantém o callback em todas as renderizações da sequência de eventos.
+  const render = component.render;
+  component.render = () => render({ onAssessment: evaluation => evaluations.push(evaluation) });
+  calculate(component, '70', '175');
+  assert.equal(evaluations.length, 1);
+  assert.equal(evaluations[0].classification, 'Peso adequado');
+  calculate(component, '', '175');
+  calculate(component, '70', '175', { birthDate: '20/09/1966' });
+  assert.equal(evaluations.length, 1);
 });
