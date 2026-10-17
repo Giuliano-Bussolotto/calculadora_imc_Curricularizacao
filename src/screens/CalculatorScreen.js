@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-  Button,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -185,9 +184,14 @@ export default function CalculatorScreen() {
             </View>
           </View>
 
-          <View style={styles.calculateButton}>
-            <Button title="Calcular" onPress={calcularIMC} color={colors.primary} />
-          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Calcular"
+            onPress={calcularIMC}
+            style={({ pressed }) => [styles.calculateButton, pressed && styles.pressed]}
+          >
+            <Text style={styles.calculateButtonText}>Calcular</Text>
+          </Pressable>
           <Pressable accessibilityRole="button" accessibilityLabel="Limpar campos" onPress={limparCampos} style={styles.clearButton}>
             <Text style={styles.clearText}>Limpar campos</Text>
           </Pressable>
@@ -210,9 +214,12 @@ export default function CalculatorScreen() {
               </View>
               <View
                 accessible
-                accessibilityLabel="Espaço reservado para futura mensagem com inteligência artificial"
+                accessibilityLabel="Mensagem de motivação após o resultado"
                 style={styles.aiMessageCard}
-              />
+              >
+                <Text style={styles.aiMessageTitle}>Mensagem de motivação</Text>
+                <Text style={styles.aiMessageDescription}>Após o cálculo, uma mensagem de motivação será exibida aqui junto ao seu resultado.</Text>
+              </View>
             </>
           ) : (
             <View style={styles.messageCard}>
@@ -249,12 +256,15 @@ const styles = StyleSheet.create({
   selectedSex: { borderColor: colors.primary, backgroundColor: colors.primarySoft },
   sexText: { color: colors.muted, fontSize: 13, fontWeight: '700' },
   selectedSexText: { color: colors.primaryDark },
-  calculateButton: { overflow: 'hidden', minHeight: 52, justifyContent: 'center', marginTop: 4, borderRadius: 14, backgroundColor: colors.primary },
+  calculateButton: { overflow: 'hidden', minHeight: 52, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16, paddingVertical: 14, marginTop: 4, borderRadius: 14, backgroundColor: colors.primary },
+  calculateButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800', textAlign: 'center' },
   clearButton: { minHeight: 48, alignItems: 'center', justifyContent: 'center' },
   clearText: { color: colors.primary, fontSize: 13, fontWeight: '700' },
   messageCard: { marginTop: 4, padding: 16, borderRadius: 16, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
   resultCard: { marginTop: 8, padding: 20, alignItems: 'center', borderRadius: 22, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, ...shadows.card },
-  aiMessageCard: { width: '100%', minHeight: 128, marginTop: 14, borderRadius: 22, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, ...shadows.card },
+  aiMessageCard: { width: '100%', minHeight: 128, padding: 20, justifyContent: 'center', marginTop: 14, borderRadius: 22, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, ...shadows.card },
+  aiMessageTitle: { color: colors.text, fontSize: 15, fontWeight: '800' },
+  aiMessageDescription: { marginTop: 8, color: colors.muted, fontSize: 13, lineHeight: 20 },
   resultEyebrow: { color: colors.muted, fontSize: 12, fontWeight: '700' },
   bmiValue: { marginTop: 2, color: colors.text, fontSize: 48, lineHeight: 54, fontWeight: '900' },
   classificationBadge: { marginTop: 4, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 18, backgroundColor: '#E2F6E8' },
